@@ -10,7 +10,7 @@
 
     <header>
         <nav>
-            <div class="logo"><img src="repoxi.jpg" width="70" height="60"> R_EPOXI.PF</div> 
+            <div  class="logo">    <img src="repoxi.jpg" width="70" height="60"> R_EPOXI.PF</div> 
             <div class="user-status-bar">
                 <span id="userEmailDisplay" class="user-email-display">Sin iniciar sesión</span>
                 <button id="btnAuth" class="btn-verde" style="padding: 6px 12px; font-size:13px;" onclick="manejarAutenticacion()">Iniciar Sesión</button>
@@ -29,11 +29,6 @@
             <div class="seccion-header">
                 <h2>Catálogo de Productos</h2>
                 <button id="btnPublicarAcceso" class="btn-verde" style="display: none;" onclick="abrirFormularioPublicar()">+ Publicar Producto</button>
-            </div>
-
-            <!-- Buscador de productos -->
-            <div style="margin-bottom: 20px;">
-                <input type="text" id="inputBuscador" placeholder="🔍 Buscar producto por nombre..." style="width: 100%; padding: 10px; border: 2px solid #0d47a1; border-radius: 6px; font-size: 15px;">
             </div>
 
             <div id="formularioPublicar" class="form-contenedor">
@@ -202,29 +197,12 @@
 
     grid.innerHTML = ''; 
 
-    // Obtener texto del buscador
-    const inputBuscador = document.getElementById('inputBuscador');
-    const textoBusqueda = inputBuscador ? inputBuscador.value.toLowerCase().trim() : '';
-
-    // Ordenar alfabéticamente de A a Z
-    let productosOrdenados = [...misObras].sort((a, b) => {
-      return (a.titulo || '').localeCompare(b.titulo || '', undefined, { sensitivity: 'base' });
-    });
-
-    // Filtrar por búsqueda si hay texto escrito
-    if (textoBusqueda !== '') {
-      productosOrdenados = productosOrdenados.filter(obra => 
-        (obra.titulo && obra.titulo.toLowerCase().includes(textoBusqueda)) ||
-        (obra.descripcion && obra.descripcion.toLowerCase().includes(textoBusqueda))
-      );
-    }
-
-    if (productosOrdenados.length === 0) {
-      grid.innerHTML = `<p style="color: #666; text-align: center; grid-column: 1/-1; padding: 20px;">No se encontraron productos.</p>`;
+    if (misObras.length === 0) {
+      grid.innerHTML = `<p style="color: #666; text-align: center; grid-column: 1/-1; padding: 20px;">No hay productos publicados todavía.</p>`;
       return;
     }
 
-    productosOrdenados.forEach((obra) => {
+    misObras.forEach((obra) => {
       const tarjeta = document.createElement('div');
       tarjeta.className = 'tarjeta-obra';
       tarjeta.innerHTML = `
@@ -242,14 +220,11 @@
       grid.appendChild(tarjeta);
     });
   }
-
-  // Escuchar cambios en la BD en tiempo real
   onSnapshot(collection(db, "productos"), (snapshot) => {
     misObras = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    misObras.sort((a, b) => (b.fecha || 0) - (a.fecha || 0));
     cargarGaleria();
   });
-
-  // Publicar producto nuevo con optimización de imagen
   const formArt = document.getElementById('artForm');
   if (formArt) {
     formArt.addEventListener('submit', async function(e) {
@@ -279,8 +254,6 @@
 
         const datosNube = await respuesta.json();
         if (!datosNube.success) throw new Error("Error en la subida.");
-
-        // Obtener versión liviana para carga rápida
         const urlPublicaDeLaFoto = datosNube.data.medium?.url || datosNube.data.display_url || datosNube.data.url;
 
         await addDoc(collection(db, "productos"), {
@@ -305,8 +278,6 @@
       }
     });
   }
-
-  // ELIMINAR producto
   window.eliminarProducto = async function(id) {
     const pin = prompt("Introduce el PIN de seguridad para eliminar:");
     if (pin === PIN_ELIMINAR) {
@@ -322,8 +293,6 @@
       alert("PIN incorrecto.");
     }
   };
-
-  // EDITAR producto
   window.editarProducto = function(id) {
     const obra = misObras.find(o => o.id === id);
     if (!obra) return;
@@ -376,8 +345,6 @@
       </div>
     `;
   };
-
-  // GUARDAR cambios con optimización de imagen
   window.guardarCambiosProducto = async function(id) {
     const obra = misObras.find(o => o.id === id);
     if (!obra) return;
@@ -484,17 +451,8 @@
       ${adminBotones}
     `;
   }
-
-  // Evento para filtrar en tiempo real al escribir en el buscador
-  document.addEventListener('DOMContentLoaded', () => {
-    const inputBuscador = document.getElementById('inputBuscador');
-    if (inputBuscador) {
-      inputBuscador.addEventListener('input', cargarGaleria);
-    }
-  });
-
-  actualizarInterfazUsuario();
-  cargarGaleria();
+actualizarInterfazUsuario();
+   cargarGaleria();
 </script>
 </body>
 </html>
