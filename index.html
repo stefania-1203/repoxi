@@ -158,28 +158,28 @@
       alert("Has cerrado sesión.");
     } else {
       const correo = prompt("Introduce tu correo electrónico:");
-      if (!correo) return;
+      if (!correo || !correo.trim()) return;
       
-      const password = prompt("Introduce tu contraseña:");
+      const password = prompt("Introduce tu contraseña (mínimo 6 caracteres):");
       if (!password) return;
 
+      const correoLimpio = correo.trim().toLowerCase();
+
       try {
-        await signInWithEmailAndPassword(auth, correo.trim(), password);
-        alert(`¡Bienvenido! Sesión iniciada.`);
+        await signInWithEmailAndPassword(auth, correoLimpio, password);
+        alert("¡Bienvenido! Sesión iniciada.");
       } catch (error) {
-        // Si el usuario no existe, ofrece la opción de registrarlo
-        if (error.code === 'auth/user-not-found') {
-          const crear = confirm("El usuario no existe. ¿Deseas registrar este correo?");
-          if (crear) {
-            try {
-              await createUserWithEmailAndPassword(auth, correo.trim(), password);
-              alert("Usuario registrado e inicio de sesión exitoso.");
-            } catch (errCrear) {
-              alert("Error al registrar: " + errCrear.message);
-            }
+        try {
+          await createUserWithEmailAndPassword(auth, correoLimpio, password);
+          alert("¡Cuenta creada con éxito e inicio de sesión automático!");
+        } catch (errorRegistro) {
+          if (errorRegistro.code === 'auth/email-already-in-use') {
+            alert("La contraseña introducida es incorrecta para este correo.");
+          } else if (errorRegistro.code === 'auth/weak-password') {
+            alert("La contraseña debe tener al menos 6 caracteres.");
+          } else {
+            alert("Error al autenticar: " + errorRegistro.message);
           }
-        } else {
-          alert("Error de autenticación: " + error.message);
         }
       }
     }
