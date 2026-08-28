@@ -15,7 +15,7 @@
         <nav>
             <div class="logo"><img src="repoxi2.jpg" width="70" height="60"> R_EPOXI.PF</div> 
             <div class="user-status-bar">
-                <span id="userEmailDisplay" class="user-email-display">Sin iniciar sesión</span>
+                <span id="userEmailDisplay" class="user-email-display">Cargando sesión...</span>
                 <button id="btnAuth" class="btn-verde" style="padding: 6px 12px; font-size:13px;" onclick="manejarAutenticacion()">Iniciar Sesión</button>
             </div>
         </nav>
@@ -33,6 +33,8 @@
                 <h2>Catálogo de Productos</h2>
                 <button id="btnPublicarAcceso" class="btn-verde" style="display: none;" onclick="abrirFormularioPublicar()">+ Publicar Producto</button>
             </div>
+
+            <!-- Buscador de productos -->
             <div style="margin-bottom: 20px;">
                 <input type="text" id="inputBuscador" placeholder="🔍 Buscar producto por nombre..." style="width: 100%; padding: 10px; border: 2px solid #0d47a1; border-radius: 6px; font-size: 15px;">
             </div>
@@ -47,6 +49,7 @@
                         <label for="descripcion">Descripción y materiales:</label>
                         <textarea id="descripcion" rows="3" placeholder="Detalles de la pieza, dimensiones, acabados..."></textarea>
                     </div>
+                    
                     <div class="form-grupo" style="margin-bottom:10px;">
                         <label for="whatsapp">WhatsApp (ej: 584121234567):</label>
                         <input type="text" id="whatsapp" placeholder="Ej: 584121234567">
@@ -97,6 +100,7 @@
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
   import { getFirestore, collection, addDoc, doc, deleteDoc, updateDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+  import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyBtaiW2KFCOEUOC0wJIijQWOoCbNdgBrTM",
@@ -110,22 +114,23 @@
 
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
+  const auth = getAuth(app);
 
   const ADMIN_EMAIL = "repoxi.pf@gmail.com"; 
   const PIN_ELIMINAR = "050325";
   const IMGBB_API_KEY = "1fe64fcd486e5ccc2e400bf8d6056a13"; 
   
   let misObras = [];
-  let usuarioLogueado = localStorage.getItem('usuarioNegocioEmail') || null;
+  let usuarioLogueado = null;
 
-  function actualizarInterfazUsuario() {
+  // Escuchar cambios de estado de autenticación real de Firebase
+  onAuthStateChanged(auth, (user) => {
     const display = document.getElementById('userEmailDisplay');
     const btnAuth = document.getElementById('btnAuth');
     const btnPublicar = document.getElementById('btnPublicarAcceso');
 
-    if (!display || !btnAuth || !btnPublicar) return;
-
-    if (usuarioLogueado) {
+    if (user) {
+      usuarioLogueado = user.email.toLowerCase();
       display.innerText = `Sesión: ${usuarioLogueado}`;
       btnAuth.innerText = "Cerrar Sesión";
       btnAuth.className = "btn-rojo";
@@ -137,32 +142,47 @@
         cerrarFormulario();
       }
     } else {
+      usuarioLogueado = null;
       display.innerText = "Sin iniciar sesión";
       btnAuth.innerText = "Iniciar Sesión";
       btnAuth.className = "btn-verde";
       btnPublicar.style.display = 'none';
       cerrarFormulario();
     }
-  }
+    cargarGaleria();
+  });
 
-  window.manejarAutenticacion = function() {
-    if (usuarioLogueado) {
-      usuarioLogueado = null;
-      localStorage.removeItem('usuarioNegocioEmail');
-      cerrarFormulario();
+  window.manejarAutenticacion = async function() {
+    if (auth.currentUser) {
+      await signOut(auth);
       alert("Has cerrado sesión.");
     } else {
-      const correo = prompt("Introduce tu correo electrónico para iniciar sesión:");
-      if (correo && correo.trim() !== "" && correo.includes('@')) {
-        usuarioLogueado = correo.trim().toLowerCase();
-        localStorage.setItem('usuarioNegocioEmail', usuarioLogueado);
-        alert(`¡Bienvenido! Sesión iniciada como: ${usuarioLogueado}`);
-      } else if (correo !== null) {
-        alert("Por favor, introduce un correo válido.");
+      const correo = prompt("Introduce tu correo electrónico:");
+      if (!correo) return;
+      
+      const password = prompt("Introduce tu contraseña:");
+      if (!password) return;
+
+      try {
+        await signInWithEmailAndPassword(auth, correo.trim(), password);
+        alert(`¡Bienvenido! Sesión iniciada.`);
+      } catch (error) {
+        // Si el usuario no existe, ofrece la opción de registrarlo
+        if (error.code === 'auth/user-not-found') {
+          const crear = confirm("El usuario no existe. ¿Deseas registrar este correo?");
+          if (crear) {
+            try {
+              await createUserWithEmailAndPassword(auth, correo.trim(), password);
+              alert("Usuario registrado e inicio de sesión exitoso.");
+            } catch (errCrear) {
+              alert("Error al registrar: " + errCrear.message);
+            }
+          }
+        } else {
+          alert("Error de autenticación: " + error.message);
+        }
       }
     }
-    actualizarInterfazUsuario();
-    cargarGaleria();
   };
 
   window.abrirFormularioPublicar = function() {
@@ -463,7 +483,6 @@
     }
   });
 
-  actualizarInterfazUsuario();
   cargarGaleria();
 </script>
 </body>
