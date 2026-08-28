@@ -16,7 +16,7 @@
             <div class="logo"><img src="repoxi2.jpg" width="70" height="60"> R_EPOXI.PF</div> 
             <div class="user-status-bar">
                 <span id="userEmailDisplay" class="user-email-display">Cargando sesión...</span>
-                <button id="btnAuth" class="btn-verde" style="padding: 6px 12px; font-size:13px;" onclick="manejarAutenticacion()">Iniciar Sesión</button>
+                <button id="btnAuth" class="btn-verde" style="padding: 6px 12px; font-size:13px;" onclick="manejarAutenticacion()">Iniciar Sesión con Google</button>
             </div>
         </nav>
     </header>
@@ -100,7 +100,7 @@
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
   import { getFirestore, collection, addDoc, doc, deleteDoc, updateDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-  import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+  import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyBtaiW2KFCOEUOC0wJIijQWOoCbNdgBrTM",
@@ -115,6 +115,7 @@
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
   const auth = getAuth(app);
+  const provider = new GoogleAuthProvider();
 
   const ADMIN_EMAIL = "repoxi.pf@gmail.com"; 
   const PIN_ELIMINAR = "050325";
@@ -123,7 +124,7 @@
   let misObras = [];
   let usuarioLogueado = null;
 
-  // Escuchar cambios de estado de autenticación real de Firebase
+  // Escuchar estado de sesión
   onAuthStateChanged(auth, (user) => {
     const display = document.getElementById('userEmailDisplay');
     const btnAuth = document.getElementById('btnAuth');
@@ -144,7 +145,7 @@
     } else {
       usuarioLogueado = null;
       display.innerText = "Sin iniciar sesión";
-      btnAuth.innerText = "Iniciar Sesión";
+      btnAuth.innerText = "Iniciar Sesión con Google";
       btnAuth.className = "btn-verde";
       btnPublicar.style.display = 'none';
       cerrarFormulario();
@@ -152,35 +153,17 @@
     cargarGaleria();
   });
 
+  // Función para Iniciar / Cerrar sesión con Google
   window.manejarAutenticacion = async function() {
     if (auth.currentUser) {
       await signOut(auth);
       alert("Has cerrado sesión.");
     } else {
-      const correo = prompt("Introduce tu correo electrónico:");
-      if (!correo || !correo.trim()) return;
-      
-      const password = prompt("Introduce tu contraseña (mínimo 6 caracteres):");
-      if (!password) return;
-
-      const correoLimpio = correo.trim().toLowerCase();
-
       try {
-        await signInWithEmailAndPassword(auth, correoLimpio, password);
-        alert("¡Bienvenido! Sesión iniciada.");
+        await signInWithPopup(auth, provider);
       } catch (error) {
-        try {
-          await createUserWithEmailAndPassword(auth, correoLimpio, password);
-          alert("¡Cuenta creada con éxito e inicio de sesión automático!");
-        } catch (errorRegistro) {
-          if (errorRegistro.code === 'auth/email-already-in-use') {
-            alert("La contraseña introducida es incorrecta para este correo.");
-          } else if (errorRegistro.code === 'auth/weak-password') {
-            alert("La contraseña debe tener al menos 6 caracteres.");
-          } else {
-            alert("Error al autenticar: " + errorRegistro.message);
-          }
-        }
+        console.error("Error al iniciar sesión:", error);
+        alert("Error al iniciar sesión con Google: " + error.message);
       }
     }
   };
