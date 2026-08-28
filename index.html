@@ -4,9 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>REPOXI.PF</title>
-   <link rel="icon" type="image/jpeg" href="repoxi2.jpg">
-<link rel="shortcut icon" href="repoxi2.jpg">
-<link rel="apple-touch-icon" href="repoxi2.jpg">
+    <link rel="icon" type="image/jpeg" href="repoxi2.jpg">
+    <link rel="shortcut icon" href="repoxi2.jpg">
+    <link rel="apple-touch-icon" href="repoxi2.jpg">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -33,13 +33,11 @@
                 <h2>Catálogo de Productos</h2>
                 <button id="btnPublicarAcceso" class="btn-verde" style="display: none;" onclick="abrirFormularioPublicar()">+ Publicar Producto</button>
             </div>
-
-            <!-- Buscador de productos -->
             <div style="margin-bottom: 20px;">
                 <input type="text" id="inputBuscador" placeholder="🔍 Buscar producto por nombre..." style="width: 100%; padding: 10px; border: 2px solid #0d47a1; border-radius: 6px; font-size: 15px;">
             </div>
 
-            <div id="formularioPublicar" class="form-contenedor">
+            <div id="formularioPublicar" class="form-contenedor" style="display: none;">
                 <form id="artForm">
                     <div class="form-grupo">
                         <label for="titulo">Nombre del producto o trabajo:</label>
@@ -49,13 +47,26 @@
                         <label for="descripcion">Descripción y materiales:</label>
                         <textarea id="descripcion" rows="3" placeholder="Detalles de la pieza, dimensiones, acabados..."></textarea>
                     </div>
-                    <div class="form-grupo">
-                        <label for="redes">Contacto o Redes Sociales:</label>
-                        <input type="text" id="redes" placeholder="Ej: WhatsApp: +58... / Instagram: @tu_negocio">
+                    <div class="form-grupo" style="margin-bottom:10px;">
+                        <label for="whatsapp">WhatsApp (ej: 584121234567):</label>
+                        <input type="text" id="whatsapp" placeholder="Ej: 584121234567">
                     </div>
+                    <div class="form-grupo" style="margin-bottom:10px;">
+                        <label for="instagram">Instagram (sin @):</label>
+                        <input type="text" id="instagram" placeholder="Ej: mi_negocio">
+                    </div>
+                    <div class="form-grupo" style="margin-bottom:10px;">
+                        <label for="facebook">Facebook:</label>
+                        <input type="text" id="facebook" placeholder="Ej: mi.negocio">
+                    </div>
+                    <div class="form-grupo" style="margin-bottom:10px;">
+                        <label for="tiktok">TikTok (sin @):</label>
+                        <input type="text" id="tiktok" placeholder="Ej: mi_negocio">
+                    </div>
+
                     <div class="form-grupo">
                         <label for="imagen">Foto del producto:</label>
-                        <input type="file" id="imagen" accept="image/*" required>
+                        <input type="file" id="imagen" accept="image/*" required style="padding:5px; display:block; margin-top:5px;">
                     </div>
                     <div class="form-botones">
                         <button type="submit" class="btn-verde">Subir al Catálogo</button>
@@ -159,38 +170,6 @@
       alert("Acceso denegado. Solo el administrador puede publicar.");
       return;
     }
-
-    const form = document.getElementById('artForm');
-    const grupoImagen = form.querySelector('label[for="imagen"]')?.parentElement;
-    if (grupoImagen) {
-      grupoImagen.innerHTML = `
-        <label for="imagen">Foto del producto:</label>
-        <input type="file" id="imagen" accept="image/*" required style="padding:5px; display:block; margin-top:5px;">
-      `;
-    }
-
-    const grupoRedesViejo = form.querySelector('label[for="redes"]')?.parentElement;
-    if (grupoRedesViejo) {
-      grupoRedesViejo.innerHTML = `
-        <div class="form-grupo" style="margin-bottom:10px;">
-          <label for="whatsapp">WhatsApp (ej: 584121234567):</label>
-          <input type="text" id="whatsapp" placeholder="Ej: 584121234567">
-        </div>
-        <div class="form-grupo" style="margin-bottom:10px;">
-          <label for="instagram">Instagram (sin @):</label>
-          <input type="text" id="instagram" placeholder="Ej: mi_negocio">
-        </div>
-        <div class="form-grupo" style="margin-bottom:10px;">
-          <label for="facebook">Facebook:</label>
-          <input type="text" id="facebook" placeholder="Ej: mi.negocio">
-        </div>
-        <div class="form-grupo" style="margin-bottom:10px;">
-          <label for="tiktok">TikTok (sin @):</label>
-          <input type="text" id="tiktok" placeholder="Ej: mi_negocio">
-        </div>
-      `;
-    }
-
     document.getElementById('formularioPublicar').style.display = 'block';
   };
 
@@ -204,11 +183,13 @@
     if (!grid) return;
 
     grid.innerHTML = ''; 
-     const inputBuscador = document.getElementById('inputBuscador');
+    const inputBuscador = document.getElementById('inputBuscador');
     const textoBusqueda = inputBuscador ? inputBuscador.value.toLowerCase().trim() : '';
+
     let productosOrdenados = [...misObras].sort((a, b) => {
       return (a.titulo || '').localeCompare(b.titulo || '', undefined, { sensitivity: 'base' });
     });
+
     if (textoBusqueda !== '') {
       productosOrdenados = productosOrdenados.filter(obra => 
         (obra.titulo && obra.titulo.toLowerCase().includes(textoBusqueda)) ||
@@ -239,10 +220,12 @@
       grid.appendChild(tarjeta);
     });
   }
+
   onSnapshot(collection(db, "productos"), (snapshot) => {
     misObras = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     cargarGaleria();
   });
+
   const formArt = document.getElementById('artForm');
   if (formArt) {
     formArt.addEventListener('submit', async function(e) {
@@ -296,6 +279,7 @@
       }
     });
   }
+
   window.eliminarProducto = async function(id) {
     const pin = prompt("Introduce el PIN de seguridad para eliminar:");
     if (pin === PIN_ELIMINAR) {
@@ -311,6 +295,7 @@
       alert("PIN incorrecto.");
     }
   };
+
   window.editarProducto = function(id) {
     const obra = misObras.find(o => o.id === id);
     if (!obra) return;
@@ -363,6 +348,7 @@
       </div>
     `;
   };
+
   window.guardarCambiosProducto = async function(id) {
     const obra = misObras.find(o => o.id === id);
     if (!obra) return;
@@ -469,6 +455,7 @@
       ${adminBotones}
     `;
   }
+
   document.addEventListener('DOMContentLoaded', () => {
     const inputBuscador = document.getElementById('inputBuscador');
     if (inputBuscador) {
