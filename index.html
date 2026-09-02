@@ -8,6 +8,48 @@
     <link rel="shortcut icon" href="repoxi2.jpg">
     <link rel="apple-touch-icon" href="repoxi2.jpg">
     <link rel="stylesheet" href="styles.css">
+    <style>
+        .btn-carrito-flotante {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #25D366;
+            color: white;
+            border: none;
+            border-radius: 50px;
+            padding: 12px 20px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            z-index: 99;
+        }
+        .modal-carrito {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 100;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-carrito-contenido {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .item-carrito {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #ddd;
+            padding: 8px 0;
+        }
+    </style>
 </head>
 <body>
 
@@ -34,7 +76,6 @@
                 <button id="btnPublicarAcceso" class="btn-verde" style="display: none;" onclick="abrirFormularioPublicar()">+ Publicar Producto</button>
             </div>
 
-            <!-- Buscador de productos -->
             <div style="margin-bottom: 20px;">
                 <input type="text" id="inputBuscador" placeholder="🔍 Buscar producto por nombre..." style="width: 100%; padding: 10px; border: 2px solid #0d47a1; border-radius: 6px; font-size: 15px;">
             </div>
@@ -46,25 +87,17 @@
                         <input type="text" id="titulo" required placeholder="Ej: Mesa de Río con Resina Azul">
                     </div>
                     <div class="form-grupo">
+                        <label for="precio">Precio ($ USD):</label>
+                        <input type="number" id="precio" step="0.01" required placeholder="Ej: 25.00">
+                    </div>
+                    <div class="form-grupo">
                         <label for="descripcion">Descripción y materiales:</label>
                         <textarea id="descripcion" rows="3" placeholder="Detalles de la pieza, dimensiones, acabados..."></textarea>
                     </div>
                     
                     <div class="form-grupo" style="margin-bottom:10px;">
-                        <label for="whatsapp">WhatsApp (ej: 584121234567):</label>
+                        <label for="whatsapp">WhatsApp de contacto del vendedor:</label>
                         <input type="text" id="whatsapp" placeholder="Ej: 584121234567">
-                    </div>
-                    <div class="form-grupo" style="margin-bottom:10px;">
-                        <label for="instagram">Instagram (sin @):</label>
-                        <input type="text" id="instagram" placeholder="Ej: mi_negocio">
-                    </div>
-                    <div class="form-grupo" style="margin-bottom:10px;">
-                        <label for="facebook">Facebook:</label>
-                        <input type="text" id="facebook" placeholder="Ej: mi.negocio">
-                    </div>
-                    <div class="form-grupo" style="margin-bottom:10px;">
-                        <label for="tiktok">TikTok (sin @):</label>
-                        <input type="text" id="tiktok" placeholder="Ej: mi_negocio">
                     </div>
 
                     <div class="form-grupo">
@@ -81,6 +114,40 @@
             <div id="galeriaGrid" class="galeria-grid"></div>
 
         </section>
+    </div>
+
+    <button class="btn-carrito-flotante" onclick="abrirCarrito()">
+        🛒 Carrito (<span id="cantCarrito">0</span>)
+    </button>
+
+    <div id="modalCarrito" class="modal-carrito">
+        <div class="modal-carrito-contenido">
+            <h2>🛒 Tu Carrito de Compras</h2>
+            <div id="listaCarrito"></div>
+            <h3 style="text-align: right; margin-top: 10px;">Total: $<span id="totalCarrito">0.00</span></h3>
+            
+            <hr>
+
+            <h4>📋 Datos para Finalizar la Compra</h4>
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+                <input type="text" id="clienteNombre" placeholder="Tu Nombre y Apellido" required style="padding: 8px;">
+                <input type="text" id="clienteTelefono" placeholder="Tu WhatsApp (Ej: 584121234567)" required style="padding: 8px;">
+                <textarea id="clienteDireccion" placeholder="Dirección de envío o detalles de entrega" style="padding: 8px;"></textarea>
+            </div>
+
+            <hr>
+
+            <h4>💳 Datos de Pago</h4>
+            <p id="infoPagoMovil" style="font-size: 13px; background: #f0f0f0; padding: 8px; border-radius: 4px;"></p>
+            
+            <label style="font-size: 13px; font-weight: bold;">Adjuntar comprobante o captura de pago:</label>
+            <input type="file" id="comprobantePago" accept="image/*" style="margin-bottom: 15px;">
+
+            <div style="display: flex; gap: 10px;">
+                <button class="btn-verde" style="flex:1; padding: 10px;" onclick="procesarCompra()">Confirmar Compra</button>
+                <button class="btn-rojo" style="padding: 10px;" onclick="cerrarCarrito()">Cerrar</button>
+            </div>
+        </div>
     </div>
 
     <div id="miModal" class="modal">
@@ -121,10 +188,16 @@
   const PIN_ELIMINAR = "050325";
   const IMGBB_API_KEY = "1fe64fcd486e5ccc2e400bf8d6056a13"; 
   
+  // CONFIGURACIÓN DE PAGO
+  const NUMERO_WHATSAPP_ADMIN = "584120000000"; // PON TU NÚMERO DE WHATSAPP AQUÍ
+  const DATOS_PAGO_MOBILE = "Pago Móvil: Banco Banesco | C.I: 12.345.678 | Tel: 0412-0000000";
+
   let misObras = [];
   let usuarioLogueado = null;
+  let carrito = [];
 
-  // Escuchar estado de sesión
+  document.getElementById('infoPagoMovil').innerText = DATOS_PAGO_MOBILE;
+
   onAuthStateChanged(auth, (user) => {
     const display = document.getElementById('userEmailDisplay');
     const btnAuth = document.getElementById('btnAuth');
@@ -153,7 +226,6 @@
     cargarGaleria();
   });
 
-  // Función para Iniciar / Cerrar sesión con Google
   window.manejarAutenticacion = async function() {
     if (auth.currentUser) {
       await signOut(auth);
@@ -162,17 +234,13 @@
       try {
         await signInWithPopup(auth, provider);
       } catch (error) {
-        console.error("Error al iniciar sesión:", error);
         alert("Error al iniciar sesión con Google: " + error.message);
       }
     }
   };
 
   window.abrirFormularioPublicar = function() {
-    if (usuarioLogueado !== ADMIN_EMAIL) {
-      alert("Acceso denegado. Solo el administrador puede publicar.");
-      return;
-    }
+    if (usuarioLogueado !== ADMIN_EMAIL) return;
     document.getElementById('formularioPublicar').style.display = 'block';
   };
 
@@ -189,14 +257,11 @@
     const inputBuscador = document.getElementById('inputBuscador');
     const textoBusqueda = inputBuscador ? inputBuscador.value.toLowerCase().trim() : '';
 
-    let productosOrdenados = [...misObras].sort((a, b) => {
-      return (a.titulo || '').localeCompare(b.titulo || '', undefined, { sensitivity: 'base' });
-    });
+    let productosOrdenados = [...misObras];
 
     if (textoBusqueda !== '') {
       productosOrdenados = productosOrdenados.filter(obra => 
-        (obra.titulo && obra.titulo.toLowerCase().includes(textoBusqueda)) ||
-        (obra.descripcion && obra.descripcion.toLowerCase().includes(textoBusqueda))
+        (obra.titulo && obra.titulo.toLowerCase().includes(textoBusqueda))
       );
     }
 
@@ -210,19 +275,138 @@
       tarjeta.className = 'tarjeta-obra';
       tarjeta.innerHTML = `
         <div class="cuadro-imagen">
-          <img src="${obra.imagen}" alt="${obra.titulo}" loading="lazy" decoding="async">
+          <img src="${obra.imagen}" alt="${obra.titulo}">
         </div>
         <div class="info-obra">
           <h2>${obra.titulo}</h2>
-          <p>${obra.descripcion ? obra.descripcion : "Sin descripción."}</p>
+          <p><strong>Precio:</strong> $${obra.precio || '0.00'}</p>
+          <button class="btn-verde" style="margin-top:5px; width:100%;" onclick="agregarAlCarrito('${obra.id}', event)">🛒 Agregar al Carrito</button>
         </div>
       `;
-      tarjeta.addEventListener('click', function() {
-        abrirModal(obra.id);
+      tarjeta.addEventListener('click', function(e) {
+        if (!e.target.classList.contains('btn-verde')) {
+          abrirModal(obra.id);
+        }
       });
       grid.appendChild(tarjeta);
     });
   }
+
+  window.agregarAlCarrito = function(id, e) {
+    e.stopPropagation();
+    const producto = misObras.find(p => p.id === id);
+    if (!producto) return;
+
+    carrito.push(producto);
+    actualizarCarritoUI();
+    alert(`¡"${producto.titulo}" agregado al carrito!`);
+  };
+
+  function actualizarCarritoUI() {
+    document.getElementById('cantCarrito').innerText = carrito.length;
+    const lista = document.getElementById('listaCarrito');
+    lista.innerHTML = '';
+
+    let total = 0;
+    carrito.forEach((item, index) => {
+      total += parseFloat(item.precio || 0);
+      const div = document.createElement('div');
+      div.className = 'item-carrito';
+      div.innerHTML = `
+        <span>${item.titulo} - <strong>$${item.precio || 0}</strong></span>
+        <button class="btn-rojo" style="padding: 2px 8px; font-size:12px;" onclick="quitarDelCarrito(${index})">X</button>
+      `;
+      lista.appendChild(div);
+    });
+
+    document.getElementById('totalCarrito').innerText = total.toFixed(2);
+  }
+
+  window.quitarDelCarrito = function(index) {
+    carrito.splice(index, 1);
+    actualizarCarritoUI();
+  };
+
+  window.abrirCarrito = function() {
+    document.getElementById('modalCarrito').style.display = 'flex';
+  };
+
+  window.cerrarCarrito = function() {
+    document.getElementById('modalCarrito').style.display = 'none';
+  };
+
+  window.procesarCompra = async function() {
+    if (carrito.length === 0) {
+      alert("El carrito está vacío.");
+      return;
+    }
+
+    const nombre = document.getElementById('clienteNombre').value.trim();
+    const telefono = document.getElementById('clienteTelefono').value.trim();
+    const direccion = document.getElementById('clienteDireccion').value.trim();
+    const archivoComprobante = document.getElementById('comprobantePago').files[0];
+
+    if (!nombre || !telefono) {
+      alert("Por favor completa tu Nombre y WhatsApp.");
+      return;
+    }
+
+    if (!archivoComprobante) {
+      alert("Por favor adjunta la captura o comprobante de pago.");
+      return;
+    }
+
+    try {
+      alert("Procesando tu compra y subiendo comprobante... Por favor espera.");
+
+      // Subir captura de pago
+      const formData = new FormData();
+      formData.append("image", archivoComprobante);
+      const resImg = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
+        method: "POST",
+        body: formData
+      });
+      const datosImg = await resImg.json();
+      const urlComprobante = datosImg.data.url;
+
+      const total = document.getElementById('totalCarrito').innerText;
+      const resumenProductos = carrito.map(p => `- ${p.titulo} ($${p.precio})`).join('\n');
+
+      // Guardar Pedido en Firebase
+      await addDoc(collection(db, "pedidos"), {
+        cliente: nombre,
+        telefono: telefono,
+        direccion: direccion,
+        productos: carrito,
+        total: total,
+        comprobanteUrl: urlComprobante,
+        fecha: Date.now()
+      });
+
+      // Crear mensaje para WhatsApp
+      const mensajeWA = `¡Hola! He realizado una compra en R_EPOXI.PF 🛍️\n\n` +
+        `👤 *Cliente:* ${nombre}\n` +
+        `📞 *Contacto:* ${telefono}\n` +
+        `📍 *Dirección:* ${direccion}\n\n` +
+        `🛒 *Pedido:*\n${resumenProductos}\n\n` +
+        `💰 *Total:* $${total}\n` +
+        `📄 *Comprobante de Pago:* ${urlComprobante}`;
+
+      // Enviar a WhatsApp
+      const urlWhatsApp = `https://wa.me/${NUMERO_WHATSAPP_ADMIN}?text=${encodeURIComponent(mensajeWA)}`;
+      window.open(urlWhatsApp, '_blank');
+
+      alert(`¡Tu compra ha sido registrada con éxito!\n\nSi deseas consultar el estado de tu envío o hacer seguimiento, contáctanos a nuestro WhatsApp: +${NUMERO_WHATSAPP_ADMIN}`);
+
+      carrito = [];
+      actualizarCarritoUI();
+      cerrarCarrito();
+
+    } catch (error) {
+      console.error(error);
+      alert("Ocurrió un error al procesar el pedido.");
+    }
+  };
 
   onSnapshot(collection(db, "productos"), (snapshot) => {
     misObras = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -233,40 +417,27 @@
   if (formArt) {
     formArt.addEventListener('submit', async function(e) {
       e.preventDefault();
-
-      if (usuarioLogueado !== ADMIN_EMAIL) {
-        alert("No tienes permisos para realizar esta acción.");
-        return;
-      }
+      if (usuarioLogueado !== ADMIN_EMAIL) return;
 
       const archivoImagen = document.getElementById('imagen').files[0];
-      if (!archivoImagen) {
-        alert("Por favor, selecciona una foto.");
-        return;
-      }
+      if (!archivoImagen) return;
 
       try {
-        alert("Subiendo imagen... Por favor espera.");
-
+        alert("Subiendo producto...");
         const formData = new FormData();
         formData.append("image", archivoImagen);
-
         const respuesta = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
           method: "POST",
           body: formData
         });
-
         const datosNube = await respuesta.json();
-        if (!datosNube.success) throw new Error("Error en la subida.");
-        const urlPublicaDeLaFoto = datosNube.data.medium?.url || datosNube.data.display_url || datosNube.data.url;
+        const urlPublicaDeLaFoto = datosNube.data.url;
 
         await addDoc(collection(db, "productos"), {
           titulo: document.getElementById('titulo').value,
+          precio: document.getElementById('precio').value,
           descripcion: document.getElementById('descripcion').value,
-          whatsapp: document.getElementById('whatsapp')?.value.replace(/[^0-9]/g, '') || '',
-          instagram: document.getElementById('instagram')?.value.replace('@', '').trim() || '',
-          facebook: document.getElementById('facebook')?.value.trim() || '',
-          tiktok: document.getElementById('tiktok')?.value.replace('@', '').trim() || '',
+          whatsapp: document.getElementById('whatsapp')?.value || '',
           creador: usuarioLogueado, 
           imagen: urlPublicaDeLaFoto,
           fecha: Date.now()
@@ -275,198 +446,27 @@
         document.getElementById('artForm').reset();
         cerrarFormulario();
         alert("¡Producto publicado con éxito!");
-
       } catch (error) {
-        console.error(error);
-        alert("❌ Error al publicar el producto.");
+        alert("Error al publicar.");
       }
     });
   }
 
-  window.eliminarProducto = async function(id) {
-    const pin = prompt("Introduce el PIN de seguridad para eliminar:");
-    if (pin === PIN_ELIMINAR) {
-      try {
-        await deleteDoc(doc(db, "productos", id));
-        cerrarModal();
-        alert("Producto eliminado correctamente.");
-      } catch (error) {
-        console.error(error);
-        alert("Error al intentar eliminar el producto.");
-      }
-    } else if (pin !== null) {
-      alert("PIN incorrecto.");
-    }
-  };
-
-  window.editarProducto = function(id) {
-    const obra = misObras.find(o => o.id === id);
-    if (!obra) return;
-
-    const infoContenedor = document.getElementById('modalInfoCampos');
-    
-    infoContenedor.innerHTML = `
-      <h3 style="margin-top:0; color:#1a365d;">Editar Producto</h3>
-      
-      <div style="display:flex; flex-direction:column; gap:10px; text-align:left;">
-        <div>
-          <label style="font-weight:bold; font-size:13px;">Nombre del producto:</label>
-          <input type="text" id="editTitulo" value="${obra.titulo || ''}" style="width:100%; padding:8px; margin-top:3px; border:1px solid #ccc; border-radius:4px;">
-        </div>
-
-        <div>
-          <label style="font-weight:bold; font-size:13px;">Descripción:</label>
-          <textarea id="editDescripcion" style="width:100%; height:70px; padding:8px; margin-top:3px; border:1px solid #ccc; border-radius:4px;">${obra.descripcion || ''}</textarea>
-        </div>
-
-        <div>
-          <label style="font-weight:bold; font-size:13px;">WhatsApp (solo números):</label>
-          <input type="text" id="editWhatsapp" value="${obra.whatsapp || ''}" style="width:100%; padding:8px; margin-top:3px; border:1px solid #ccc; border-radius:4px;">
-        </div>
-
-        <div>
-          <label style="font-weight:bold; font-size:13px;">Instagram (usuario):</label>
-          <input type="text" id="editInstagram" value="${obra.instagram || ''}" style="width:100%; padding:8px; margin-top:3px; border:1px solid #ccc; border-radius:4px;">
-        </div>
-
-        <div>
-          <label style="font-weight:bold; font-size:13px;">Facebook (usuario/página):</label>
-          <input type="text" id="editFacebook" value="${obra.facebook || ''}" style="width:100%; padding:8px; margin-top:3px; border:1px solid #ccc; border-radius:4px;">
-        </div>
-
-        <div>
-          <label style="font-weight:bold; font-size:13px;">TikTok (usuario):</label>
-          <input type="text" id="editTiktok" value="${obra.tiktok || ''}" style="width:100%; padding:8px; margin-top:3px; border:1px solid #ccc; border-radius:4px;">
-        </div>
-
-        <div>
-          <label style="font-weight:bold; font-size:13px;">Cambiar imagen (Opcional):</label>
-          <input type="file" id="editImagen" accept="image/*" style="display:block; margin-top:5px;">
-        </div>
-
-        <div style="margin-top:15px; display:flex; gap:10px;">
-          <button onclick="guardarCambiosProducto('${obra.id}')" style="background:#1b498a; color:white; border:none; padding:10px 16px; border-radius:4px; font-weight:bold; cursor:pointer;">Guardar Cambios</button>
-          <button onclick="abrirModal('${obra.id}')" style="background:#dc3545; color:white; border:none; padding:10px 16px; border-radius:4px; font-weight:bold; cursor:pointer;">Cancelar</button>
-        </div>
-      </div>
-    `;
-  };
-
-  window.guardarCambiosProducto = async function(id) {
-    const obra = misObras.find(o => o.id === id);
-    if (!obra) return;
-
-    const nuevoTitulo = document.getElementById('editTitulo').value;
-    const nuevaDesc = document.getElementById('editDescripcion').value;
-    const nuevoWhatsapp = document.getElementById('editWhatsapp').value.replace(/[^0-9]/g, '');
-    const nuevoInstagram = document.getElementById('editInstagram').value.replace('@', '').trim();
-    const nuevoFacebook = document.getElementById('editFacebook').value.trim();
-    const nuevoTiktok = document.getElementById('editTiktok').value.replace('@', '').trim();
-    const archivoNuevaImagen = document.getElementById('editImagen').files[0];
-
-    try {
-      let urlImagenFinal = obra.imagen;
-
-      if (archivoNuevaImagen) {
-        alert("Subiendo la nueva imagen... Por favor espera.");
-        const formData = new FormData();
-        formData.append("image", archivoNuevaImagen);
-
-        const respuesta = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
-          method: "POST",
-          body: formData
-        });
-
-        const datosNube = await respuesta.json();
-        if (datosNube.success) {
-          urlImagenFinal = datosNube.data.medium?.url || datosNube.data.display_url || datosNube.data.url;
-        }
-      }
-
-      await updateDoc(doc(db, "productos", id), {
-        titulo: nuevoTitulo,
-        descripcion: nuevaDesc,
-        whatsapp: nuevoWhatsapp,
-        instagram: nuevoInstagram,
-        facebook: nuevoFacebook,
-        tiktok: nuevoTiktok,
-        imagen: urlImagenFinal
-      });
-
-      cerrarModal();
-      alert("¡Producto actualizado correctamente!");
-
-    } catch (error) {
-      console.error(error);
-      alert("Error al actualizar el producto.");
-    }
-  };
-
   window.abrirModal = function(id) {
     const obra = misObras.find(o => o.id === id);
     if (!obra) return;
-
     document.getElementById('modalImg').src = obra.imagen;
-    mostrarVistaNormal(obra);
+    document.getElementById('modalInfoCampos').innerHTML = `
+      <h2>${obra.titulo}</h2>
+      <p><strong>Precio:</strong> $${obra.precio || '0.00'}</p>
+      <p>${obra.descripcion || "Sin descripción."}</p>
+    `;
     document.getElementById('miModal').style.display = 'flex';
   };
 
   window.cerrarModal = function() {
     document.getElementById('miModal').style.display = 'none';
   };
-
-  function mostrarVistaNormal(obra) {
-    const infoContenedor = document.getElementById('modalInfoCampos');
-    
-    let redesHTML = '<div class="modal-redes" style="margin-top:15px; display:flex; flex-direction:column; gap:8px;">';
-    let tieneRedes = false;
-
-    if (obra.whatsapp) {
-      redesHTML += `<a href="https://wa.me/${obra.whatsapp}" target="_blank" style="color:#25D366; text-decoration:none; font-weight:bold;">📲 WhatsApp: +${obra.whatsapp}</a>`;
-      tieneRedes = true;
-    }
-    if (obra.instagram) {
-      redesHTML += `<a href="https://instagram.com/${obra.instagram}" target="_blank" style="color:#E1306C; text-decoration:none; font-weight:bold;">📸 Instagram: @${obra.instagram}</a>`;
-      tieneRedes = true;
-    }
-    if (obra.facebook) {
-      redesHTML += `<a href="https://facebook.com/${obra.facebook}" target="_blank" style="color:#4267B2; text-decoration:none; font-weight:bold;">📘 Facebook: ${obra.facebook}</a>`;
-      tieneRedes = true;
-    }
-    if (obra.tiktok) {
-      redesHTML += `<a href="https://tiktok.com/@${obra.tiktok}" target="_blank" style="color:#000; text-decoration:none; font-weight:bold;">🎵 TikTok: @${obra.tiktok}</a>`;
-      tieneRedes = true;
-    }
-    redesHTML += '</div>';
-
-    if (!tieneRedes) redesHTML = '';
-
-    let adminBotones = '';
-    if (usuarioLogueado === ADMIN_EMAIL) {
-      adminBotones = `
-        <div style="margin-top:20px; display:flex; gap:10px;">
-          <button onclick="editarProducto('${obra.id}')" style="background:#f39c12; color:white; border:none; padding:8px 12px; border-radius:4px; cursor:pointer;">Editar</button>
-          <button onclick="eliminarProducto('${obra.id}')" style="background:#e74c3c; color:white; border:none; padding:8px 12px; border-radius:4px; cursor:pointer;">Eliminar</button>
-        </div>
-      `;
-    }
-
-    infoContenedor.innerHTML = `
-      <h2>${obra.titulo}</h2>
-      <p>${obra.descripcion ? obra.descripcion : "Sin descripción."}</p>
-      ${redesHTML}
-      ${adminBotones}
-    `;
-  }
-
-  document.addEventListener('DOMContentLoaded', () => {
-    const inputBuscador = document.getElementById('inputBuscador');
-    if (inputBuscador) {
-      inputBuscador.addEventListener('input', cargarGaleria);
-    }
-  });
-
-  cargarGaleria();
 </script>
 </body>
 </html>
