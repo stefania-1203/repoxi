@@ -306,7 +306,7 @@
     document.getElementById('modalCarrito').style.display = 'none';
   };
 
-  window.procesarCompra = async function() {
+window.procesarCompra = async function() {
     if (carrito.length === 0) {
       alert("El carrito está vacío.");
       return;
@@ -326,6 +326,8 @@
       alert("Por favor adjunta la captura o comprobante de pago.");
       return;
     }
+
+    const NUMERO_WHATSAPP_ADMIN = "584144137520";
 
     try {
       alert("Procesando tu compra y subiendo comprobante... Por favor espera.");
@@ -361,9 +363,8 @@
         `📄 *Comprobante de Pago:* ${urlComprobante}`;
 
       const urlWhatsApp = `https://wa.me/${NUMERO_WHATSAPP_ADMIN}?text=${encodeURIComponent(mensajeWA)}`;
-      window.open(urlWhatsApp, '_blank');
-
-      alert(`¡Tu compra ha sido registrada con éxito!\n\nSi deseas consultar el estado de tu envío o hacer seguimiento, contáctanos a nuestro WhatsApp: +${NUMERO_WHATSAPP_ADMIN}`);
+   
+        window.open(urlWhatsApp, '_blank');
 
       carrito = [];
       actualizarCarritoUI();
@@ -371,7 +372,7 @@
 
     } catch (error) {
       console.error(error);
-      alert("Ocurrió un error al procesar el pedido.");
+      alert("Ocurrió un error al procesar el pedido: " + error.message);
     }
   };
 
