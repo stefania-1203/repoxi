@@ -96,8 +96,20 @@
                     </div>
                     
                     <div class="form-grupo" style="margin-bottom:10px;">
-                        <label for="whatsapp">WhatsApp de contacto del vendedor:</label>
+                        <label for="whatsapp">WhatsApp (ej: 584121234567):</label>
                         <input type="text" id="whatsapp" placeholder="Ej: 584121234567">
+                    </div>
+                    <div class="form-grupo" style="margin-bottom:10px;">
+                        <label for="instagram">Instagram (sin @):</label>
+                        <input type="text" id="instagram" placeholder="Ej: mi_negocio">
+                    </div>
+                    <div class="form-grupo" style="margin-bottom:10px;">
+                        <label for="facebook">Facebook:</label>
+                        <input type="text" id="facebook" placeholder="Ej: mi.negocio">
+                    </div>
+                    <div class="form-grupo" style="margin-bottom:10px;">
+                        <label for="tiktok">TikTok (sin @):</label>
+                        <input type="text" id="tiktok" placeholder="Ej: mi_negocio">
                     </div>
 
                     <div class="form-grupo">
@@ -189,7 +201,7 @@
   const IMGBB_API_KEY = "1fe64fcd486e5ccc2e400bf8d6056a13"; 
   
   // CONFIGURACIÓN DE PAGO
-  const NUMERO_WHATSAPP_ADMIN = "584120000000"; // PON TU NÚMERO DE WHATSAPP AQUÍ
+  const NUMERO_WHATSAPP_ADMIN = "584120000000"; 
   const DATOS_PAGO_MOBILE = "Pago Móvil: Banco Banesco | C.I: 12.345.678 | Tel: 0412-0000000";
 
   let misObras = [];
@@ -257,11 +269,14 @@
     const inputBuscador = document.getElementById('inputBuscador');
     const textoBusqueda = inputBuscador ? inputBuscador.value.toLowerCase().trim() : '';
 
-    let productosOrdenados = [...misObras];
+    let productosOrdenados = [...misObras].sort((a, b) => {
+      return (a.titulo || '').localeCompare(b.titulo || '', undefined, { sensitivity: 'base' });
+    });
 
     if (textoBusqueda !== '') {
       productosOrdenados = productosOrdenados.filter(obra => 
-        (obra.titulo && obra.titulo.toLowerCase().includes(textoBusqueda))
+        (obra.titulo && obra.titulo.toLowerCase().includes(textoBusqueda)) ||
+        (obra.descripcion && obra.descripcion.toLowerCase().includes(textoBusqueda))
       );
     }
 
@@ -275,12 +290,13 @@
       tarjeta.className = 'tarjeta-obra';
       tarjeta.innerHTML = `
         <div class="cuadro-imagen">
-          <img src="${obra.imagen}" alt="${obra.titulo}">
+          <img src="${obra.imagen}" alt="${obra.titulo}" loading="lazy" decoding="async">
         </div>
         <div class="info-obra">
           <h2>${obra.titulo}</h2>
           <p><strong>Precio:</strong> $${obra.precio || '0.00'}</p>
-          <button class="btn-verde" style="margin-top:5px; width:100%;" onclick="agregarAlCarrito('${obra.id}', event)">🛒 Agregar al Carrito</button>
+          <p>${obra.descripcion ? obra.descripcion : "Sin descripción."}</p>
+          <button class="btn-verde" style="margin-top:8px; width:100%;" onclick="agregarAlCarrito('${obra.id}', event)">🛒 Agregar al Carrito</button>
         </div>
       `;
       tarjeta.addEventListener('click', function(e) {
@@ -359,7 +375,6 @@
     try {
       alert("Procesando tu compra y subiendo comprobante... Por favor espera.");
 
-      // Subir captura de pago
       const formData = new FormData();
       formData.append("image", archivoComprobante);
       const resImg = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
@@ -372,7 +387,6 @@
       const total = document.getElementById('totalCarrito').innerText;
       const resumenProductos = carrito.map(p => `- ${p.titulo} ($${p.precio})`).join('\n');
 
-      // Guardar Pedido en Firebase
       await addDoc(collection(db, "pedidos"), {
         cliente: nombre,
         telefono: telefono,
@@ -383,7 +397,6 @@
         fecha: Date.now()
       });
 
-      // Crear mensaje para WhatsApp
       const mensajeWA = `¡Hola! He realizado una compra en R_EPOXI.PF 🛍️\n\n` +
         `👤 *Cliente:* ${nombre}\n` +
         `📞 *Contacto:* ${telefono}\n` +
@@ -392,7 +405,6 @@
         `💰 *Total:* $${total}\n` +
         `📄 *Comprobante de Pago:* ${urlComprobante}`;
 
-      // Enviar a WhatsApp
       const urlWhatsApp = `https://wa.me/${NUMERO_WHATSAPP_ADMIN}?text=${encodeURIComponent(mensajeWA)}`;
       window.open(urlWhatsApp, '_blank');
 
@@ -431,13 +443,16 @@
           body: formData
         });
         const datosNube = await respuesta.json();
-        const urlPublicaDeLaFoto = datosNube.data.url;
+        const urlPublicaDeLaFoto = datosNube.data.medium?.url || datosNube.data.display_url || datosNube.data.url;
 
         await addDoc(collection(db, "productos"), {
           titulo: document.getElementById('titulo').value,
           precio: document.getElementById('precio').value,
           descripcion: document.getElementById('descripcion').value,
-          whatsapp: document.getElementById('whatsapp')?.value || '',
+          whatsapp: document.getElementById('whatsapp')?.value.replace(/[^0-9]/g, '') || '',
+          instagram: document.getElementById('instagram')?.value.replace('@', '').trim() || '',
+          facebook: document.getElementById('facebook')?.value.trim() || '',
+          tiktok: document.getElementById('tiktok')?.value.replace('@', '').trim() || '',
           creador: usuarioLogueado, 
           imagen: urlPublicaDeLaFoto,
           fecha: Date.now()
@@ -452,21 +467,200 @@
     });
   }
 
+  // --- FUNCIONES DE ADMINISTRACIÓN: EDITAR Y ELIMINAR ---
+
+  window.eliminarProducto = async function(id) {
+    const pin = prompt("Introduce el PIN de seguridad para eliminar:");
+    if (pin === PIN_ELIMINAR) {
+      try {
+        await deleteDoc(doc(db, "productos", id));
+        cerrarModal();
+        alert("Producto eliminado correctamente.");
+      } catch (error) {
+        console.error(error);
+        alert("Error al intentar eliminar el producto.");
+      }
+    } else if (pin !== null) {
+      alert("PIN incorrecto.");
+    }
+  };
+
+  window.editarProducto = function(id) {
+    const obra = misObras.find(o => o.id === id);
+    if (!obra) return;
+
+    const infoContenedor = document.getElementById('modalInfoCampos');
+    
+    infoContenedor.innerHTML = `
+      <h3 style="margin-top:0; color:#1a365d;">Editar Producto</h3>
+      
+      <div style="display:flex; flex-direction:column; gap:10px; text-align:left;">
+        <div>
+          <label style="font-weight:bold; font-size:13px;">Nombre del producto:</label>
+          <input type="text" id="editTitulo" value="${obra.titulo || ''}" style="width:100%; padding:8px; margin-top:3px; border:1px solid #ccc; border-radius:4px;">
+        </div>
+
+        <div>
+          <label style="font-weight:bold; font-size:13px;">Precio ($ USD):</label>
+          <input type="number" id="editPrecio" step="0.01" value="${obra.precio || ''}" style="width:100%; padding:8px; margin-top:3px; border:1px solid #ccc; border-radius:4px;">
+        </div>
+
+        <div>
+          <label style="font-weight:bold; font-size:13px;">Descripción:</label>
+          <textarea id="editDescripcion" style="width:100%; height:70px; padding:8px; margin-top:3px; border:1px solid #ccc; border-radius:4px;">${obra.descripcion || ''}</textarea>
+        </div>
+
+        <div>
+          <label style="font-weight:bold; font-size:13px;">WhatsApp (solo números):</label>
+          <input type="text" id="editWhatsapp" value="${obra.whatsapp || ''}" style="width:100%; padding:8px; margin-top:3px; border:1px solid #ccc; border-radius:4px;">
+        </div>
+
+        <div>
+          <label style="font-weight:bold; font-size:13px;">Instagram (usuario):</label>
+          <input type="text" id="editInstagram" value="${obra.instagram || ''}" style="width:100%; padding:8px; margin-top:3px; border:1px solid #ccc; border-radius:4px;">
+        </div>
+
+        <div>
+          <label style="font-weight:bold; font-size:13px;">Facebook (usuario/página):</label>
+          <input type="text" id="editFacebook" value="${obra.facebook || ''}" style="width:100%; padding:8px; margin-top:3px; border:1px solid #ccc; border-radius:4px;">
+        </div>
+
+        <div>
+          <label style="font-weight:bold; font-size:13px;">TikTok (usuario):</label>
+          <input type="text" id="editTiktok" value="${obra.tiktok || ''}" style="width:100%; padding:8px; margin-top:3px; border:1px solid #ccc; border-radius:4px;">
+        </div>
+
+        <div>
+          <label style="font-weight:bold; font-size:13px;">Cambiar imagen (Opcional):</label>
+          <input type="file" id="editImagen" accept="image/*" style="display:block; margin-top:5px;">
+        </div>
+
+        <div style="margin-top:15px; display:flex; gap:10px;">
+          <button onclick="guardarCambiosProducto('${obra.id}')" style="background:#1b498a; color:white; border:none; padding:10px 16px; border-radius:4px; font-weight:bold; cursor:pointer;">Guardar Cambios</button>
+          <button onclick="abrirModal('${obra.id}')" style="background:#dc3545; color:white; border:none; padding:10px 16px; border-radius:4px; font-weight:bold; cursor:pointer;">Cancelar</button>
+        </div>
+      </div>
+    `;
+  };
+
+  window.guardarCambiosProducto = async function(id) {
+    const obra = misObras.find(o => o.id === id);
+    if (!obra) return;
+
+    const nuevoTitulo = document.getElementById('editTitulo').value;
+    const nuevoPrecio = document.getElementById('editPrecio').value;
+    const nuevaDesc = document.getElementById('editDescripcion').value;
+    const nuevoWhatsapp = document.getElementById('editWhatsapp').value.replace(/[^0-9]/g, '');
+    const nuevoInstagram = document.getElementById('editInstagram').value.replace('@', '').trim();
+    const nuevoFacebook = document.getElementById('editFacebook').value.trim();
+    const nuevoTiktok = document.getElementById('editTiktok').value.replace('@', '').trim();
+    const archivoNuevaImagen = document.getElementById('editImagen').files[0];
+
+    try {
+      let urlImagenFinal = obra.imagen;
+
+      if (archivoNuevaImagen) {
+        alert("Subiendo la nueva imagen... Por favor espera.");
+        const formData = new FormData();
+        formData.append("image", archivoNuevaImagen);
+
+        const respuesta = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
+          method: "POST",
+          body: formData
+        });
+
+        const datosNube = await respuesta.json();
+        if (datosNube.success) {
+          urlImagenFinal = datosNube.data.medium?.url || datosNube.data.display_url || datosNube.data.url;
+        }
+      }
+
+      await updateDoc(doc(db, "productos", id), {
+        titulo: nuevoTitulo,
+        precio: nuevoPrecio,
+        descripcion: nuevaDesc,
+        whatsapp: nuevoWhatsapp,
+        instagram: nuevoInstagram,
+        facebook: nuevoFacebook,
+        tiktok: nuevoTiktok,
+        imagen: urlImagenFinal
+      });
+
+      cerrarModal();
+      alert("¡Producto actualizado correctamente!");
+
+    } catch (error) {
+      console.error(error);
+      alert("Error al actualizar el producto.");
+    }
+  };
+
   window.abrirModal = function(id) {
     const obra = misObras.find(o => o.id === id);
     if (!obra) return;
+
     document.getElementById('modalImg').src = obra.imagen;
-    document.getElementById('modalInfoCampos').innerHTML = `
-      <h2>${obra.titulo}</h2>
-      <p><strong>Precio:</strong> $${obra.precio || '0.00'}</p>
-      <p>${obra.descripcion || "Sin descripción."}</p>
-    `;
+    mostrarVistaNormal(obra);
     document.getElementById('miModal').style.display = 'flex';
   };
 
   window.cerrarModal = function() {
     document.getElementById('miModal').style.display = 'none';
   };
+
+  function mostrarVistaNormal(obra) {
+    const infoContenedor = document.getElementById('modalInfoCampos');
+    
+    let redesHTML = '<div class="modal-redes" style="margin-top:15px; display:flex; flex-direction:column; gap:8px;">';
+    let tieneRedes = false;
+
+    if (obra.whatsapp) {
+      redesHTML += `<a href="https://wa.me/${obra.whatsapp}" target="_blank" style="color:#25D366; text-decoration:none; font-weight:bold;">📲 WhatsApp: +${obra.whatsapp}</a>`;
+      tieneRedes = true;
+    }
+    if (obra.instagram) {
+      redesHTML += `<a href="https://instagram.com/${obra.instagram}" target="_blank" style="color:#E1306C; text-decoration:none; font-weight:bold;">📸 Instagram: @${obra.instagram}</a>`;
+      tieneRedes = true;
+    }
+    if (obra.facebook) {
+      redesHTML += `<a href="https://facebook.com/${obra.facebook}" target="_blank" style="color:#4267B2; text-decoration:none; font-weight:bold;">📘 Facebook: ${obra.facebook}</a>`;
+      tieneRedes = true;
+    }
+    if (obra.tiktok) {
+      redesHTML += `<a href="https://tiktok.com/@${obra.tiktok}" target="_blank" style="color:#000; text-decoration:none; font-weight:bold;">🎵 TikTok: @${obra.tiktok}</a>`;
+      tieneRedes = true;
+    }
+    redesHTML += '</div>';
+
+    if (!tieneRedes) redesHTML = '';
+
+    let adminBotones = '';
+    if (usuarioLogueado === ADMIN_EMAIL) {
+      adminBotones = `
+        <div style="margin-top:20px; display:flex; gap:10px;">
+          <button onclick="editarProducto('${obra.id}')" style="background:#f39c12; color:white; border:none; padding:8px 12px; border-radius:4px; cursor:pointer;">Editar</button>
+          <button onclick="eliminarProducto('${obra.id}')" style="background:#e74c3c; color:white; border:none; padding:8px 12px; border-radius:4px; cursor:pointer;">Eliminar</button>
+        </div>
+      `;
+    }
+
+    infoContenedor.innerHTML = `
+      <h2>${obra.titulo}</h2>
+      <p><strong>Precio:</strong> $${obra.precio || '0.00'}</p>
+      <p>${obra.descripcion ? obra.descripcion : "Sin descripción."}</p>
+      ${redesHTML}
+      ${adminBotones}
+    `;
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const inputBuscador = document.getElementById('inputBuscador');
+    if (inputBuscador) {
+      inputBuscador.addEventListener('input', cargarGaleria);
+    }
+  });
+
+  cargarGaleria();
 </script>
 </body>
 </html>
