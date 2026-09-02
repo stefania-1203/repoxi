@@ -13,7 +13,6 @@ body {
   min-height: 100vh;
 }
 
-/* Franja Superior */
 header {
   background-color: #0d47a1;
   color: #ffffff;
@@ -78,7 +77,6 @@ nav {
   color: #0d47a1;
 }
 
-/* Formulario */
 .form-contenedor {
   display: none;
   background-color: #ffffff;
@@ -111,14 +109,12 @@ nav {
   gap: 10px;
 }
 
-/* Cuadrícula del Catálogo */
 .galeria-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 1.5rem;
 }
 
-/* Tarjeta y Adaptación de la Imagen */
 .tarjeta-obra {
   background-color: #ffffff;
   border: 2px solid #0d47a1;
@@ -141,7 +137,6 @@ nav {
   background-color: #e0e0e0;
 }
 
-/* Ajusta la imagen automáticamente al tamaño del cuadro */
 .cuadro-imagen img {
   width: 100%;
   height: 100%;
@@ -165,7 +160,6 @@ nav {
   line-height: 1.4;
 }
 
-/* Botones */
 .btn-verde {
   background-color: #0d47a1;
   color: #ffffff;
@@ -204,7 +198,6 @@ nav {
   font-weight: bold;
 }
 
-/* Ventana Modal */
 .modal {
   display: none;
   position: fixed;
@@ -282,7 +275,53 @@ nav {
   margin-top: 5px;
 }
 
-/* Franja Inferior */
+.btn-carrito-flotante {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: #25D366;
+  color: white;
+  border: none;
+  border-radius: 50px;
+  padding: 12px 20px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+  z-index: 99;
+}
+
+.modal-carrito {
+  display: none;
+  position: fixed;
+  top: 0; 
+  left: 0; 
+  width: 100%; 
+  height: 100%;
+  background: rgba(0,0,0,0.7);
+  z-index: 100;
+  justify-content: center;
+  align-items: center;
+}
+
+.modal-carrito-contenido {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.item-carrito {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #ddd;
+  padding: 8px 0;
+}
+
 footer {
   background-color: #0d47a1;
   color: #ffffff;
