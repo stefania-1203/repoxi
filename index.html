@@ -328,32 +328,46 @@ window.procesarCompra = async function() {
     }
 
     const NUMERO_WHATSAPP_ADMIN = "584144137520";
+    let urlComprobante = "No disponible";
 
     try {
-      alert("Procesando tu compra y subiendo comprobante... Por favor espera.");
+      alert("Procesando tu compra... Se abrirá WhatsApp a continuación.");
 
-      const formData = new FormData();
-      formData.append("image", archivoComprobante);
-      const resImg = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
-        method: "POST",
-        body: formData
-      });
-      const datosImg = await resImg.json();
-      const urlComprobante = datosImg.data.url;
+      // 1. Intento de subida de imagen a ImgBB
+      try {
+        const formData = new FormData();
+        formData.append("image", archivoComprobante);
+        const resImg = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
+          method: "POST",
+          body: formData
+        });
+        const datosImg = await resImg.json();
+        if (datosImg && datosImg.data && datosImg.data.url) {
+          urlComprobante = datosImg.data.url;
+        }
+      } catch (errImg) {
+        console.warn("No se pudo subir la imagen a ImgBB, se continuará por WhatsApp:", errImg);
+      }
 
       const total = document.getElementById('totalCarrito').innerText;
       const resumenProductos = carrito.map(p => `- ${p.titulo} (€${p.precio})`).join('\n');
 
-      await addDoc(collection(db, "pedidos"), {
-        cliente: nombre,
-        telefono: telefono,
-        direccion: direccion,
-        productos: carrito,
-        total: total,
-        comprobanteUrl: urlComprobante,
-        fecha: Date.now()
-      });
+      // 2. Intento de guardar en Firestore (si falla por permisos, no detiene el proceso)
+      try {
+        await addDoc(collection(db, "pedidos"), {
+          cliente: nombre,
+          telefono: telefono,
+          direccion: direccion,
+          productos: carrito,
+          total: total,
+          comprobanteUrl: urlComprobante,
+          fecha: Date.now()
+        });
+      } catch (errDb) {
+        console.warn("No se guardó en Firestore (revisa las reglas de seguridad):", errDb);
+      }
 
+      // 3. Generar mensaje y abrir WhatsApp directamente
       const mensajeWA = `¡Hola! He realizado una compra en R_EPOXI.PF 🛍️\n\n` +
         `👤 *Cliente:* ${nombre}\n` +
         `📞 *Contacto:* ${telefono}\n` +
@@ -363,8 +377,8 @@ window.procesarCompra = async function() {
         `📄 *Comprobante de Pago:* ${urlComprobante}`;
 
       const urlWhatsApp = `https://wa.me/${NUMERO_WHATSAPP_ADMIN}?text=${encodeURIComponent(mensajeWA)}`;
-   
-        window.open(urlWhatsApp, '_blank');
+      
+      window.open(urlWhatsApp, '_blank');
 
       carrito = [];
       actualizarCarritoUI();
@@ -372,10 +386,9 @@ window.procesarCompra = async function() {
 
     } catch (error) {
       console.error(error);
-      alert("Ocurrió un error al procesar el pedido: " + error.message);
+      alert("Ocurrió un detalle al procesar: " + error.message);
     }
   };
-
   onSnapshot(collection(db, "productos"), (snapshot) => {
     misObras = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     cargarGaleria();
