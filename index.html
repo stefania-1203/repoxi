@@ -446,7 +446,7 @@
       if (!archivoImagen) return;
 
       const variantes = [];
-      document.querySelectorAll('.variante-item').forEach(item => {
+      document.querySelectorAll('#contenedorVariantes .variante-item').forEach(item => {
         const nom = item.querySelector('.var-nombre').value.trim();
         const prec = item.querySelector('.var-precio').value.trim();
         if (nom && prec) {
@@ -528,6 +528,12 @@
         </div>
 
         <div>
+          <label style="font-weight:bold; font-size:13px; display:block; margin-bottom:5px;">Variantes / Presentaciones:</label>
+          <div id="contenedorVariantesEdit"></div>
+          <button type="button" class="btn-amarillo" style="margin-top: 6px; padding: 4px 8px; font-size: 12px; cursor: pointer;" onclick="agregarCampoVarianteEdit()">+ Agregar Variante</button>
+        </div>
+
+        <div>
           <label style="font-weight:bold; font-size:13px;">Descripción:</label>
           <textarea id="editDescripcion" style="height:70px;">${obra.descripcion || ''}</textarea>
         </div>
@@ -563,6 +569,22 @@
         </div>
       </div>
     `;
+
+    if (obra.variantes && obra.variantes.length > 0) {
+      obra.variantes.forEach(v => agregarCampoVarianteEdit(v.nombre, v.precio));
+    }
+  };
+
+  window.agregarCampoVarianteEdit = function(nombre = '', precio = '') {
+    const div = document.createElement('div');
+    div.className = 'variante-item-edit';
+    div.style.cssText = 'display:flex; gap:5px; margin-bottom:5px;';
+    div.innerHTML = `
+      <input type="text" placeholder="Ej: Cuerina Pequeña 50 uds" value="${nombre}" class="var-nombre-edit" style="flex:2;">
+      <input type="number" step="0.01" placeholder="Precio €" value="${precio}" class="var-precio-edit" style="flex:1;">
+      <button type="button" class="btn-rojo" style="padding: 4px 8px; cursor: pointer;" onclick="this.parentElement.remove()">X</button>
+    `;
+    document.getElementById('contenedorVariantesEdit').appendChild(div);
   };
 
   window.guardarCambiosProducto = async function(id) {
@@ -577,6 +599,15 @@
     const nuevoFacebook = document.getElementById('editFacebook').value.trim();
     const nuevoTiktok = document.getElementById('editTiktok').value.replace('@', '').trim();
     const archivoNuevaImagen = document.getElementById('editImagen').files[0];
+
+    const nuevasVariantes = [];
+    document.querySelectorAll('.variante-item-edit').forEach(item => {
+      const nom = item.querySelector('.var-nombre-edit').value.trim();
+      const prec = item.querySelector('.var-precio-edit').value.trim();
+      if (nom && prec) {
+        nuevasVariantes.push({ nombre: nom, precio: parseFloat(prec) });
+      }
+    });
 
     try {
       let urlImagenFinal = obra.imagen;
@@ -601,6 +632,7 @@
         titulo: nuevoTitulo,
         precio: nuevoPrecio,
         descripcion: nuevaDesc,
+        variantes: nuevasVariantes,
         whatsapp: nuevoWhatsapp,
         instagram: nuevoInstagram,
         facebook: nuevoFacebook,
