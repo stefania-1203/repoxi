@@ -4,6 +4,12 @@
   padding: 0;
 }
 
+html, body {
+  overflow-x: hidden;
+  max-width: 100%;
+  width: 100%;
+}
+
 body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   background-color: #ffffff;
@@ -16,8 +22,9 @@ body {
 header {
   background-color: #0d47a1;
   color: #ffffff;
-  padding: 1rem 2rem;
+  padding: 1rem;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  width: 100%;
 }
 
 nav {
@@ -26,21 +33,30 @@ nav {
   align-items: center;
   max-width: 1200px;
   margin: 0 auto;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
 .logo {
   font-size: 1.5rem;
   font-weight: bold;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .user-status-bar {
   display: flex;
   align-items: center;
-  gap: 15px;
+  gap: 8px;
+  flex-wrap: wrap;
+  max-width: 100%;
 }
 
 .user-email-display {
-  font-size: 0.9rem;
+  font-size: 0.85rem;
+  word-break: break-all;
+  max-width: 160px;
 }
 
 .hero {
@@ -71,6 +87,8 @@ nav {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
 .seccion-header h2 {
@@ -111,7 +129,7 @@ nav {
 
 .galeria-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: 1.5rem;
 }
 
@@ -329,6 +347,7 @@ footer {
   padding: 1rem;
   margin-top: auto;
 }
+
 .variante-item {
   display: flex;
   gap: 8px;
@@ -380,32 +399,4 @@ footer {
   border-radius: 6px;
   text-align: center;
   font-size: 15px;
-
-html, body {
-  overflow-x: hidden;
-  max-width: 100%;
-}
-  
-header nav {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px;
-  box-sizing: border-box;
-}
-
-.user-status-bar {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-  max-width: 100%;
-}
-
-.user-email-display {
-  font-size: 11px;
-  word-break: break-all; 
-  max-width: 180px;
-}
 }
