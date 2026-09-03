@@ -329,8 +329,6 @@ footer {
   padding: 1rem;
   margin-top: auto;
 }
-
-/* ESTILOS DE VARIANTES Y CANTIDADES */
 .variante-item {
   display: flex;
   gap: 8px;
@@ -382,4 +380,32 @@ footer {
   border-radius: 6px;
   text-align: center;
   font-size: 15px;
+
+html, body {
+  overflow-x: hidden;
+  max-width: 100%;
+}
+  
+header nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px;
+  box-sizing: border-box;
+}
+
+.user-status-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  max-width: 100%;
+}
+
+.user-email-display {
+  font-size: 11px;
+  word-break: break-all; 
+  max-width: 180px;
+}
 }
