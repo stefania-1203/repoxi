@@ -42,18 +42,17 @@
                 <form id="artForm">
                     <div class="form-grupo">
                         <label for="titulo">Nombre del producto o trabajo:</label>
-                        <input type="text" id="titulo" required placeholder="Ej: Mesa de Río con Resina Azul">
+                        <input type="text" id="titulo" required placeholder="Ej: Cuerina para Llaveros">
                     </div>
                     <div class="form-grupo">
                        <label for="precio">Precio Base / Desde (€ EUR):</label>
-                        <input type="number" id="precio" step="0.01" required placeholder="Ej: 25.00">
+                        <input type="number" id="precio" step="0.01" required placeholder="Ej: 12.00">
                     </div>
 
-                    <!-- NUEVA SECCIÓN: VARIANTES -->
                     <div class="form-grupo">
-                        <label style="font-weight: bold;">Variantes / Presentaciones (Opcional):</label>
+                        <label style="font-weight: bold;">Variantes / Modelos / Presentaciones (Opcional):</label>
                         <div id="contenedorVariantes"></div>
-                        <button type="button" class="btn-amarillo" style="margin-top: 6px; padding: 6px 12px; font-size: 12px; cursor: pointer;" onclick="agregarCampoVariante()">+ Agregar Variante / Presentación</button>
+                        <button type="button" class="btn-amarillo" style="margin-top: 6px; padding: 6px 12px; font-size: 12px; cursor: pointer;" onclick="agregarCampoVariante()">+ Agregar Variante</button>
                     </div>
 
                     <div class="form-grupo">
@@ -173,13 +172,13 @@
 
   document.getElementById('infoPagoMovil').innerText = DATOS_PAGO_MOBILE;
 
-  // --- MANEJO DE VARIANTES DINÁMICAS EN ADMIN ---
   window.agregarCampoVariante = function(nombre = '', precio = '') {
     const div = document.createElement('div');
     div.className = 'variante-item';
+    div.style.cssText = 'display: flex; gap: 6px; margin-bottom: 6px;';
     div.innerHTML = `
-      <input type="text" placeholder="Ej: Cuerina Pequeña 50 uds" value="${nombre}" class="var-nombre" style="flex:2;">
-      <input type="number" step="0.01" placeholder="Precio €" value="${precio}" class="var-precio" style="flex:1;">
+      <input type="text" placeholder="Ej: Cuerina Pequeña 50 unidades" value="${nombre}" class="var-nombre" style="flex:2; padding: 6px;">
+      <input type="number" step="0.01" placeholder="Precio €" value="${precio}" class="var-precio" style="flex:1; padding: 6px;">
       <button type="button" class="btn-rojo" style="padding: 4px 8px; cursor: pointer;" onclick="this.parentElement.remove()">X</button>
     `;
     document.getElementById('contenedorVariantes').appendChild(div);
@@ -261,6 +260,11 @@
     }
 
     productosOrdenados.forEach((obra) => {
+      let textoPrecio = `€${obra.precio || '0.00'}`;
+      if (obra.variantes && obra.variantes.length > 0) {
+        textoPrecio = `Desde €${obra.precio || obra.variantes[0].precio}`;
+      }
+
       const tarjeta = document.createElement('div');
       tarjeta.className = 'tarjeta-obra';
       tarjeta.innerHTML = `
@@ -269,7 +273,7 @@
         </div>
         <div class="info-obra">
           <h2>${obra.titulo}</h2>
-          <p><strong>Precio base:</strong> €${obra.precio || '0.00'}</p>
+          <p><strong>Precio:</strong> ${textoPrecio}</p>
           <p style="white-space: pre-line;">${obra.descripcion ? obra.descripcion : "Sin descripción."}</p>
           <button class="btn-verde" style="margin-top:8px; width:100%;" onclick="abrirModal('${obra.id}')">🛒 Ver opciones / Comprar</button>
         </div>
@@ -283,7 +287,6 @@
     });
   }
 
-  // --- SELECCIÓN Y COMPRA DESDE EL MODAL CON VARIANTES ---
   window.agregarDesdeModal = function(id) {
     const producto = misObras.find(p => p.id === id);
     if (!producto) return;
@@ -295,7 +298,7 @@
     const selectVar = document.getElementById('selectVarianteModal');
     if (selectVar && producto.variantes && producto.variantes[selectVar.value]) {
       const varianteSel = producto.variantes[selectVar.value];
-      nombreFinal = `${producto.titulo} (${varianteSel.nombre})`;
+      nombreFinal = `${producto.titulo} - ${varianteSel.nombre}`;
       precioFinal = parseFloat(varianteSel.precio);
     }
 
@@ -324,6 +327,7 @@
       totalGeneral += item.subtotal;
       const div = document.createElement('div');
       div.className = 'item-carrito';
+      div.style.cssText = "display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; border-bottom: 1px solid #ddd; padding-bottom: 5px;";
       div.innerHTML = `
         <div>
           <strong>${item.cantidad}x</strong> ${item.titulo}<br>
@@ -489,8 +493,6 @@
     });
   }
 
-  // --- FUNCIONES DE ADMINISTRACIÓN: EDITAR Y ELIMINAR ---
-
   window.eliminarProducto = async function(id) {
     const pin = prompt("Introduce el PIN de seguridad para eliminar:");
     if (pin === PIN_ELIMINAR) {
@@ -519,43 +521,43 @@
       <div style="display:flex; flex-direction:column; gap:10px; text-align:left;">
         <div>
           <label style="font-weight:bold; font-size:13px;">Nombre del producto:</label>
-          <input type="text" id="editTitulo" value="${obra.titulo || ''}">
+          <input type="text" id="editTitulo" value="${obra.titulo || ''}" style="width:100%; padding:6px;">
         </div>
 
         <div>
-          <label style="font-weight:bold; font-size:13px;">Precio Base (€ EUR):</label>
-          <input type="number" id="editPrecio" step="0.01" value="${obra.precio || ''}">
+          <label style="font-weight:bold; font-size:13px;">Precio Base / Desde (€ EUR):</label>
+          <input type="number" id="editPrecio" step="0.01" value="${obra.precio || ''}" style="width:100%; padding:6px;">
         </div>
 
         <div>
-          <label style="font-weight:bold; font-size:13px; display:block; margin-bottom:5px;">Variantes / Presentaciones:</label>
+          <label style="font-weight:bold; font-size:13px; display:block; margin-bottom:5px;">Variantes / Modelos:</label>
           <div id="contenedorVariantesEdit"></div>
           <button type="button" class="btn-amarillo" style="margin-top: 6px; padding: 4px 8px; font-size: 12px; cursor: pointer;" onclick="agregarCampoVarianteEdit()">+ Agregar Variante</button>
         </div>
 
         <div>
           <label style="font-weight:bold; font-size:13px;">Descripción:</label>
-          <textarea id="editDescripcion" style="height:70px;">${obra.descripcion || ''}</textarea>
+          <textarea id="editDescripcion" style="width:100%; height:70px; padding:6px;">${obra.descripcion || ''}</textarea>
         </div>
 
         <div>
           <label style="font-weight:bold; font-size:13px;">WhatsApp (solo números):</label>
-          <input type="text" id="editWhatsapp" value="${obra.whatsapp || ''}">
+          <input type="text" id="editWhatsapp" value="${obra.whatsapp || ''}" style="width:100%; padding:6px;">
         </div>
 
         <div>
           <label style="font-weight:bold; font-size:13px;">Instagram (usuario):</label>
-          <input type="text" id="editInstagram" value="${obra.instagram || ''}">
+          <input type="text" id="editInstagram" value="${obra.instagram || ''}" style="width:100%; padding:6px;">
         </div>
 
         <div>
           <label style="font-weight:bold; font-size:13px;">Facebook (usuario/página):</label>
-          <input type="text" id="editFacebook" value="${obra.facebook || ''}">
+          <input type="text" id="editFacebook" value="${obra.facebook || ''}" style="width:100%; padding:6px;">
         </div>
 
         <div>
           <label style="font-weight:bold; font-size:13px;">TikTok (usuario):</label>
-          <input type="text" id="editTiktok" value="${obra.tiktok || ''}">
+          <input type="text" id="editTiktok" value="${obra.tiktok || ''}" style="width:100%; padding:6px;">
         </div>
 
         <div>
@@ -580,8 +582,8 @@
     div.className = 'variante-item-edit';
     div.style.cssText = 'display:flex; gap:5px; margin-bottom:5px;';
     div.innerHTML = `
-      <input type="text" placeholder="Ej: Cuerina Pequeña 50 uds" value="${nombre}" class="var-nombre-edit" style="flex:2;">
-      <input type="number" step="0.01" placeholder="Precio €" value="${precio}" class="var-precio-edit" style="flex:1;">
+      <input type="text" placeholder="Ej: Cuerina Mediana 10 unidades" value="${nombre}" class="var-nombre-edit" style="flex:2; padding:6px;">
+      <input type="number" step="0.01" placeholder="Precio €" value="${precio}" class="var-precio-edit" style="flex:1; padding:6px;">
       <button type="button" class="btn-rojo" style="padding: 4px 8px; cursor: pointer;" onclick="this.parentElement.remove()">X</button>
     `;
     document.getElementById('contenedorVariantesEdit').appendChild(div);
@@ -668,19 +670,19 @@
     let variantesHTML = '';
     if (obra.variantes && obra.variantes.length > 0) {
       variantesHTML = `
-        <div class="contenedor-variantes-modal">
-          <label>Selecciona la presentación:</label>
-          <select id="selectVarianteModal" class="select-variante">
-            ${obra.variantes.map((v, i) => `<option value="${i}">${v.nombre} - €${v.precio.toFixed(2)}</option>`).join('')}
+        <div style="margin: 12px 0;">
+          <label style="font-weight: bold; display: block; margin-bottom: 4px;">Selecciona la presentación / modelo:</label>
+          <select id="selectVarianteModal" style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ccc; font-size: 14px;">
+            ${obra.variantes.map((v, i) => `<option value="${i}">${v.nombre} - €${parseFloat(v.precio).toFixed(2)}</option>`).join('')}
           </select>
         </div>
       `;
     }
 
     let selectorCantidad = `
-      <div class="contenedor-cantidad-modal">
-        <label style="font-weight:bold;">Cantidad:</label>
-        <input type="number" id="cantProductoModal" value="1" min="1" class="input-cantidad">
+      <div style="margin: 12px 0; display: flex; align-items: center; gap: 10px;">
+        <label style="font-weight: bold;">Cantidad a llevar:</label>
+        <input type="number" id="cantProductoModal" value="1" min="1" style="width: 70px; padding: 6px; text-align: center; border-radius: 4px; border: 1px solid #ccc;">
       </div>
     `;
 
