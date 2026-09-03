@@ -45,9 +45,17 @@
                         <input type="text" id="titulo" required placeholder="Ej: Mesa de Río con Resina Azul">
                     </div>
                     <div class="form-grupo">
-                       <label for="precio">Precio (€ EUR):</label>
+                       <label for="precio">Precio Base / Desde (€ EUR):</label>
                         <input type="number" id="precio" step="0.01" required placeholder="Ej: 25.00">
                     </div>
+
+                    <!-- NUEVA SECCIÓN: VARIANTES -->
+                    <div class="form-grupo">
+                        <label style="font-weight: bold;">Variantes / Presentaciones (Opcional):</label>
+                        <div id="contenedorVariantes"></div>
+                        <button type="button" class="btn-amarillo" style="margin-top: 6px; padding: 6px 12px; font-size: 12px; cursor: pointer;" onclick="agregarCampoVariante()">+ Agregar Variante / Presentación</button>
+                    </div>
+
                     <div class="form-grupo">
                         <label for="descripcion">Descripción y materiales:</label>
                         <textarea id="descripcion" rows="3" placeholder="Detalles de la pieza, dimensiones, acabados..."></textarea>
@@ -165,6 +173,18 @@
 
   document.getElementById('infoPagoMovil').innerText = DATOS_PAGO_MOBILE;
 
+  // --- MANEJO DE VARIANTES DINÁMICAS EN ADMIN ---
+  window.agregarCampoVariante = function(nombre = '', precio = '') {
+    const div = document.createElement('div');
+    div.className = 'variante-item';
+    div.innerHTML = `
+      <input type="text" placeholder="Ej: Cuerina Pequeña 50 uds" value="${nombre}" class="var-nombre" style="flex:2;">
+      <input type="number" step="0.01" placeholder="Precio €" value="${precio}" class="var-precio" style="flex:1;">
+      <button type="button" class="btn-rojo" style="padding: 4px 8px; cursor: pointer;" onclick="this.parentElement.remove()">X</button>
+    `;
+    document.getElementById('contenedorVariantes').appendChild(div);
+  };
+
   onAuthStateChanged(auth, (user) => {
     const display = document.getElementById('userEmailDisplay');
     const btnAuth = document.getElementById('btnAuth');
@@ -249,9 +269,9 @@
         </div>
         <div class="info-obra">
           <h2>${obra.titulo}</h2>
-          <p><strong>Precio:</strong> €${obra.precio || '0.00'}</p>
-          <p>${obra.descripcion ? obra.descripcion : "Sin descripción."}</p>
-          <button class="btn-verde" style="margin-top:8px; width:100%;" onclick="agregarAlCarrito('${obra.id}', event)">🛒 Agregar al Carrito</button>
+          <p><strong>Precio base:</strong> €${obra.precio || '0.00'}</p>
+          <p style="white-space: pre-line;">${obra.descripcion ? obra.descripcion : "Sin descripción."}</p>
+          <button class="btn-verde" style="margin-top:8px; width:100%;" onclick="abrirModal('${obra.id}')">🛒 Ver opciones / Comprar</button>
         </div>
       `;
       tarjeta.addEventListener('click', function(e) {
@@ -263,34 +283,58 @@
     });
   }
 
-  window.agregarAlCarrito = function(id, e) {
-    e.stopPropagation();
+  // --- SELECCIÓN Y COMPRA DESDE EL MODAL CON VARIANTES ---
+  window.agregarDesdeModal = function(id) {
     const producto = misObras.find(p => p.id === id);
     if (!producto) return;
 
-    carrito.push(producto);
+    const cantidad = parseInt(document.getElementById('cantProductoModal').value) || 1;
+    let nombreFinal = producto.titulo;
+    let precioFinal = parseFloat(producto.precio || 0);
+
+    const selectVar = document.getElementById('selectVarianteModal');
+    if (selectVar && producto.variantes && producto.variantes[selectVar.value]) {
+      const varianteSel = producto.variantes[selectVar.value];
+      nombreFinal = `${producto.titulo} (${varianteSel.nombre})`;
+      precioFinal = parseFloat(varianteSel.precio);
+    }
+
+    carrito.push({
+      id: producto.id,
+      titulo: nombreFinal,
+      precio: precioFinal,
+      cantidad: cantidad,
+      subtotal: precioFinal * cantidad
+    });
+
     actualizarCarritoUI();
-    alert(`¡"${producto.titulo}" agregado al carrito!`);
+    cerrarModal();
+    alert(`¡${cantidad}x "${nombreFinal}" agregado(s) al carrito!`);
   };
 
   function actualizarCarritoUI() {
-    document.getElementById('cantCarrito').innerText = carrito.length;
+    const totalItems = carrito.reduce((acc, item) => acc + item.cantidad, 0);
+    document.getElementById('cantCarrito').innerText = totalItems;
+    
     const lista = document.getElementById('listaCarrito');
     lista.innerHTML = '';
 
-    let total = 0;
+    let totalGeneral = 0;
     carrito.forEach((item, index) => {
-      total += parseFloat(item.precio || 0);
+      totalGeneral += item.subtotal;
       const div = document.createElement('div');
       div.className = 'item-carrito';
       div.innerHTML = `
-        <span>${item.titulo} - <strong>€${item.precio || 0}</strong></span>
-        <button class="btn-rojo" style="padding: 2px 8px; font-size:12px;" onclick="quitarDelCarrito(${index})">X</button>
+        <div>
+          <strong>${item.cantidad}x</strong> ${item.titulo}<br>
+          <small>€${item.precio.toFixed(2)} c/u — Total: <strong>€${item.subtotal.toFixed(2)}</strong></small>
+        </div>
+        <button class="btn-rojo" style="padding: 2px 8px; font-size:12px; cursor:pointer;" onclick="quitarDelCarrito(${index})">X</button>
       `;
       lista.appendChild(div);
     });
 
-    document.getElementById('totalCarrito').innerText = total.toFixed(2);
+    document.getElementById('totalCarrito').innerText = totalGeneral.toFixed(2);
   }
 
   window.quitarDelCarrito = function(index) {
@@ -306,7 +350,7 @@
     document.getElementById('modalCarrito').style.display = 'none';
   };
 
-window.procesarCompra = async function() {
+  window.procesarCompra = async function() {
     if (carrito.length === 0) {
       alert("El carrito está vacío.");
       return;
@@ -333,7 +377,6 @@ window.procesarCompra = async function() {
     try {
       alert("Procesando tu compra... Se abrirá WhatsApp a continuación.");
 
-      // 1. Intento de subida de imagen a ImgBB
       try {
         const formData = new FormData();
         formData.append("image", archivoComprobante);
@@ -346,13 +389,12 @@ window.procesarCompra = async function() {
           urlComprobante = datosImg.data.url;
         }
       } catch (errImg) {
-        console.warn("No se pudo subir la imagen a ImgBB, se continuará por WhatsApp:", errImg);
+        console.warn("No se pudo subir la imagen a ImgBB:", errImg);
       }
 
       const total = document.getElementById('totalCarrito').innerText;
-      const resumenProductos = carrito.map(p => `- ${p.titulo} (€${p.precio})`).join('\n');
+      const resumenProductos = carrito.map(p => `- ${p.cantidad}x ${p.titulo} (€${p.subtotal.toFixed(2)})`).join('\n');
 
-      // 2. Intento de guardar en Firestore (si falla por permisos, no detiene el proceso)
       try {
         await addDoc(collection(db, "pedidos"), {
           cliente: nombre,
@@ -364,10 +406,9 @@ window.procesarCompra = async function() {
           fecha: Date.now()
         });
       } catch (errDb) {
-        console.warn("No se guardó en Firestore (revisa las reglas de seguridad):", errDb);
+        console.warn("No se guardó en Firestore:", errDb);
       }
 
-      // 3. Generar mensaje y abrir WhatsApp directamente
       const mensajeWA = `¡Hola! He realizado una compra en R_EPOXI.PF 🛍️\n\n` +
         `👤 *Cliente:* ${nombre}\n` +
         `📞 *Contacto:* ${telefono}\n` +
@@ -389,6 +430,7 @@ window.procesarCompra = async function() {
       alert("Ocurrió un detalle al procesar: " + error.message);
     }
   };
+
   onSnapshot(collection(db, "productos"), (snapshot) => {
     misObras = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     cargarGaleria();
@@ -402,6 +444,15 @@ window.procesarCompra = async function() {
 
       const archivoImagen = document.getElementById('imagen').files[0];
       if (!archivoImagen) return;
+
+      const variantes = [];
+      document.querySelectorAll('.variante-item').forEach(item => {
+        const nom = item.querySelector('.var-nombre').value.trim();
+        const prec = item.querySelector('.var-precio').value.trim();
+        if (nom && prec) {
+          variantes.push({ nombre: nom, precio: parseFloat(prec) });
+        }
+      });
 
       try {
         alert("Subiendo producto...");
@@ -418,6 +469,7 @@ window.procesarCompra = async function() {
           titulo: document.getElementById('titulo').value,
           precio: document.getElementById('precio').value,
           descripcion: document.getElementById('descripcion').value,
+          variantes: variantes,
           whatsapp: document.getElementById('whatsapp')?.value.replace(/[^0-9]/g, '') || '',
           instagram: document.getElementById('instagram')?.value.replace('@', '').trim() || '',
           facebook: document.getElementById('facebook')?.value.trim() || '',
@@ -428,10 +480,11 @@ window.procesarCompra = async function() {
         });
 
         document.getElementById('artForm').reset();
+        document.getElementById('contenedorVariantes').innerHTML = '';
         cerrarFormulario();
         alert("¡Producto publicado con éxito!");
       } catch (error) {
-        alert("Error al publicar.");
+        alert("Error al publicar el producto.");
       }
     });
   }
@@ -466,37 +519,37 @@ window.procesarCompra = async function() {
       <div style="display:flex; flex-direction:column; gap:10px; text-align:left;">
         <div>
           <label style="font-weight:bold; font-size:13px;">Nombre del producto:</label>
-          <input type="text" id="editTitulo" value="${obra.titulo || ''}" style="width:100%; padding:8px; margin-top:3px; border:1px solid #ccc; border-radius:4px;">
+          <input type="text" id="editTitulo" value="${obra.titulo || ''}">
         </div>
 
         <div>
-          <label style="font-weight:bold; font-size:13px;">Precio (€ EUR):</label>
-          <input type="number" id="editPrecio" step="0.01" value="${obra.precio || ''}" style="width:100%; padding:8px; margin-top:3px; border:1px solid #ccc; border-radius:4px;">
+          <label style="font-weight:bold; font-size:13px;">Precio Base (€ EUR):</label>
+          <input type="number" id="editPrecio" step="0.01" value="${obra.precio || ''}">
         </div>
 
         <div>
           <label style="font-weight:bold; font-size:13px;">Descripción:</label>
-          <textarea id="editDescripcion" style="width:100%; height:70px; padding:8px; margin-top:3px; border:1px solid #ccc; border-radius:4px;">${obra.descripcion || ''}</textarea>
+          <textarea id="editDescripcion" style="height:70px;">${obra.descripcion || ''}</textarea>
         </div>
 
         <div>
           <label style="font-weight:bold; font-size:13px;">WhatsApp (solo números):</label>
-          <input type="text" id="editWhatsapp" value="${obra.whatsapp || ''}" style="width:100%; padding:8px; margin-top:3px; border:1px solid #ccc; border-radius:4px;">
+          <input type="text" id="editWhatsapp" value="${obra.whatsapp || ''}">
         </div>
 
         <div>
           <label style="font-weight:bold; font-size:13px;">Instagram (usuario):</label>
-          <input type="text" id="editInstagram" value="${obra.instagram || ''}" style="width:100%; padding:8px; margin-top:3px; border:1px solid #ccc; border-radius:4px;">
+          <input type="text" id="editInstagram" value="${obra.instagram || ''}">
         </div>
 
         <div>
           <label style="font-weight:bold; font-size:13px;">Facebook (usuario/página):</label>
-          <input type="text" id="editFacebook" value="${obra.facebook || ''}" style="width:100%; padding:8px; margin-top:3px; border:1px solid #ccc; border-radius:4px;">
+          <input type="text" id="editFacebook" value="${obra.facebook || ''}">
         </div>
 
         <div>
           <label style="font-weight:bold; font-size:13px;">TikTok (usuario):</label>
-          <input type="text" id="editTiktok" value="${obra.tiktok || ''}" style="width:100%; padding:8px; margin-top:3px; border:1px solid #ccc; border-radius:4px;">
+          <input type="text" id="editTiktok" value="${obra.tiktok || ''}">
         </div>
 
         <div>
@@ -580,6 +633,25 @@ window.procesarCompra = async function() {
   function mostrarVistaNormal(obra) {
     const infoContenedor = document.getElementById('modalInfoCampos');
     
+    let variantesHTML = '';
+    if (obra.variantes && obra.variantes.length > 0) {
+      variantesHTML = `
+        <div class="contenedor-variantes-modal">
+          <label>Selecciona la presentación:</label>
+          <select id="selectVarianteModal" class="select-variante">
+            ${obra.variantes.map((v, i) => `<option value="${i}">${v.nombre} - €${v.precio.toFixed(2)}</option>`).join('')}
+          </select>
+        </div>
+      `;
+    }
+
+    let selectorCantidad = `
+      <div class="contenedor-cantidad-modal">
+        <label style="font-weight:bold;">Cantidad:</label>
+        <input type="number" id="cantProductoModal" value="1" min="1" class="input-cantidad">
+      </div>
+    `;
+
     let redesHTML = '<div class="modal-redes" style="margin-top:15px; display:flex; flex-direction:column; gap:8px;">';
     let tieneRedes = false;
 
@@ -615,8 +687,11 @@ window.procesarCompra = async function() {
 
     infoContenedor.innerHTML = `
       <h2>${obra.titulo}</h2>
-      <p><strong>Precio:</strong> €${obra.precio || '0.00'}</p>
-      <p>${obra.descripcion ? obra.descripcion : "Sin descripción."}</p>
+      <p><strong>Precio base:</strong> €${obra.precio || '0.00'}</p>
+      <p style="white-space: pre-line;">${obra.descripcion ? obra.descripcion : "Sin descripción."}</p>
+      ${variantesHTML}
+      ${selectorCantidad}
+      <button class="btn-verde" style="width:100%; padding:10px; font-size:15px; cursor:pointer;" onclick="agregarDesdeModal('${obra.id}')">🛒 Agregar al Carrito</button>
       ${redesHTML}
       ${adminBotones}
     `;
