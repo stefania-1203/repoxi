@@ -752,11 +752,7 @@
       inputBuscador.addEventListener('input', cargarGaleria);
     }
   });
-if (textoBusqueda !== '') {
-      productosOrdenados = productosOrdenados.filter(obra => 
-        obra.titulo && obra.titulo.toLowerCase().includes(textoBusqueda)
-      );
-    }
+cargarGaleria()
 </script>
 </body>
 </html>
