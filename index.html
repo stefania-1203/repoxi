@@ -14,15 +14,15 @@
 </head>
 <body>
 
-    <!-- Notificación emergente temporal -->
-    <div id="toastNotificacion" style="display: none; position: fixed; bottom: 80px; right: 20px; background-color: #0d47a1; color: #ffffff; padding: 12px 20px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 2000; font-weight: bold; font-size: 14px;"></div>
+    <!-- Notificación emergente en la parte superior -->
+    <div id="toastNotificacion" style="display: none; position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background-color: #0d47a1; color: #ffffff; padding: 12px 24px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 3000; font-weight: bold; font-size: 14px; text-align: center; min-width: 250px;"></div>
 
     <header>
         <nav>
             <div class="logo"><img src="repoxi2.jpg" width="70" height="60"> R_EPOXI.PF</div> 
             <div class="user-status-bar">
                 <span id="userEmailDisplay" class="user-email-display">Cargando sesión...</span>
-                <button id="btnAuth" class="btn-verde" style="padding: 6px 12px; font-size:13px;" onclick="manejarAutenticacion()">Iniciar Sesión con Google</button>
+                <button id="btnAuth" class="btn-verde" style="padding: 6px 12px; font-size:13px;" onclick="manejarAutenticacion()">Iniciar Sesión</button>
             </div>
         </nav>
     </header>
@@ -231,12 +231,12 @@
   window.manejarAutenticacion = async function() {
     if (auth.currentUser) {
       await signOut(auth);
-      alert("Has cerrado sesión.");
+      mostrarNotificacion("Has cerrado sesión.");
     } else {
       try {
         await signInWithPopup(auth, provider);
       } catch (error) {
-        alert("Error al iniciar sesión con Google: " + error.message);
+        mostrarNotificacion("Error al iniciar sesión con Google.");
       }
     }
   };
@@ -372,7 +372,7 @@
 
   window.procesarCompra = async function() {
     if (carrito.length === 0) {
-      alert("El carrito está vacío.");
+      mostrarNotificacion("El carrito está vacío.");
       return;
     }
 
@@ -382,12 +382,12 @@
     const archivoComprobante = document.getElementById('comprobantePago').files[0];
 
     if (!nombre || !telefono) {
-      alert("Por favor completa tu Nombre y WhatsApp.");
+      mostrarNotificacion("Por favor completa tu Nombre y WhatsApp.");
       return;
     }
 
     if (!archivoComprobante) {
-      alert("Por favor adjunta la captura o comprobante de pago.");
+      mostrarNotificacion("Adjunta el comprobante de pago.");
       return;
     }
 
@@ -395,7 +395,7 @@
     let urlComprobante = "No disponible";
 
     try {
-      alert("Procesando tu compra... Se abrirá WhatsApp a continuación.");
+      mostrarNotificacion("Procesando tu compra...");
 
       try {
         const formData = new FormData();
@@ -447,7 +447,7 @@
 
     } catch (error) {
       console.error(error);
-      alert("Ocurrió un detalle al procesar: " + error.message);
+      mostrarNotificacion("Ocurrió un detalle al procesar la compra.");
     }
   };
 
@@ -475,7 +475,7 @@
       });
 
       try {
-        alert("Subiendo producto...");
+        mostrarNotificacion("Subiendo producto...");
         const formData = new FormData();
         formData.append("image", archivoImagen);
         const respuesta = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
@@ -502,9 +502,9 @@
         document.getElementById('artForm').reset();
         document.getElementById('contenedorVariantes').innerHTML = '';
         cerrarFormulario();
-        alert("¡Producto publicado con éxito!");
+        mostrarNotificacion("¡Producto publicado con éxito!");
       } catch (error) {
-        alert("Error al publicar el producto.");
+        mostrarNotificacion("Error al publicar el producto.");
       }
     });
   }
@@ -515,13 +515,13 @@
       try {
         await deleteDoc(doc(db, "productos", id));
         cerrarModal();
-        alert("Producto eliminado correctamente.");
+        mostrarNotificacion("Producto eliminado correctamente.");
       } catch (error) {
         console.error(error);
-        alert("Error al intentar eliminar el producto.");
+        mostrarNotificacion("Error al intentar eliminar el producto.");
       }
     } else if (pin !== null) {
-      alert("PIN incorrecto.");
+      mostrarNotificacion("PIN incorrecto.");
     }
   };
 
@@ -631,7 +631,7 @@
       let urlImagenFinal = obra.imagen;
 
       if (archivoNuevaImagen) {
-        alert("Subiendo la nueva imagen... Por favor espera.");
+        mostrarNotificacion("Subiendo nueva imagen...");
         const formData = new FormData();
         formData.append("image", archivoNuevaImagen);
 
@@ -659,11 +659,11 @@
       });
 
       cerrarModal();
-      alert("¡Producto actualizado correctamente!");
+      mostrarNotificacion("¡Producto actualizado correctamente!");
 
     } catch (error) {
       console.error(error);
-      alert("Error al actualizar el producto.");
+      mostrarNotificacion("Error al actualizar el producto.");
     }
   };
 
