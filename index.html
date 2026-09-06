@@ -14,6 +14,9 @@
 </head>
 <body>
 
+    <!-- Notificación emergente temporal -->
+    <div id="toastNotificacion" style="display: none; position: fixed; bottom: 80px; right: 20px; background-color: #0d47a1; color: #ffffff; padding: 12px 20px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 2000; font-weight: bold; font-size: 14px;"></div>
+
     <header>
         <nav>
             <div class="logo"><img src="repoxi2.jpg" width="70" height="60"> R_EPOXI.PF</div> 
@@ -175,6 +178,16 @@
 
   document.getElementById('infoPagoMovil').innerText = DATOS_PAGO_MOBILE;
 
+  function mostrarNotificacion(mensaje) {
+    const toast = document.getElementById('toastNotificacion');
+    if (!toast) return;
+    toast.innerText = mensaje;
+    toast.style.display = 'block';
+    setTimeout(() => {
+      toast.style.display = 'none';
+    }, 3000);
+  }
+
   window.agregarCampoVariante = function(nombre = '', precio = '') {
     const div = document.createElement('div');
     div.className = 'variante-item';
@@ -315,7 +328,7 @@
 
     actualizarCarritoUI();
     cerrarModal();
-    alert(`¡${cantidad}x "${nombreFinal}" agregado(s) al carrito!`);
+    mostrarNotificacion(`¡${cantidad}x "${nombreFinal}" agregado(s) al carrito!`);
   };
 
   function actualizarCarritoUI() {
