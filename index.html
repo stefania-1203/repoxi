@@ -285,7 +285,7 @@
           <img src="${obra.imagen}" alt="${obra.titulo}" loading="lazy" decoding="async">
         </div>
         <div class="info-obra">
-          <h2>${obra.titulo}</h2>
+          2<h2>${obra.titulo}</h2>
           <p><strong>Precio:</strong> ${textoPrecio}</p>
           <p style="white-space: pre-line;">${obra.descripcion ? obra.descripcion : "Sin descripción."}</p>
           <button class="btn-verde" style="margin-top:8px; width:100%;" onclick="abrirModal('${obra.id}')">🛒 Ver opciones / Comprar</button>
@@ -360,11 +360,18 @@
   };
 
   window.abrirCarrito = function() {
+    history.pushState({ modalAbierto: 'carrito' }, '');
     document.getElementById('modalCarrito').style.display = 'flex';
   };
 
-  window.cerrarCarrito = function() {
-    document.getElementById('modalCarrito').style.display = 'none';
+  window.cerrarCarrito = function(desdeHistorial = false) {
+    const modal = document.getElementById('modalCarrito');
+    if (modal && modal.style.display === 'flex') {
+      modal.style.display = 'none';
+      if (!desdeHistorial && history.state && history.state.modalAbierto) {
+        history.back();
+      }
+    }
   };
 
   window.procesarCompra = async function() {
@@ -668,14 +675,32 @@
     const obra = misObras.find(o => o.id === id);
     if (!obra) return;
 
+    history.pushState({ modalAbierto: 'producto' }, '');
     document.getElementById('modalImg').src = obra.imagen;
     mostrarVistaNormal(obra);
     document.getElementById('miModal').style.display = 'flex';
   };
 
-  window.cerrarModal = function() {
-    document.getElementById('miModal').style.display = 'none';
+  window.cerrarModal = function(desdeHistorial = false) {
+    const modal = document.getElementById('miModal');
+    if (modal && modal.style.display === 'flex') {
+      modal.style.display = 'none';
+      if (!desdeHistorial && history.state && history.state.modalAbierto) {
+        history.back();
+      }
+    }
   };
+
+  window.addEventListener('popstate', (e) => {
+    const modalProducto = document.getElementById('miModal');
+    const modalCarritoEl = document.getElementById('modalCarrito');
+
+    if (modalProducto && modalProducto.style.display === 'flex') {
+      cerrarModal(true);
+    } else if (modalCarritoEl && modalCarritoEl.style.display === 'flex') {
+      cerrarCarrito(true);
+    }
+  });
 
   function mostrarVistaNormal(obra) {
     const infoContenedor = document.getElementById('modalInfoCampos');
