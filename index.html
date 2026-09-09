@@ -703,27 +703,30 @@
     let tieneRedes = false;
 
     if (obra.whatsapp) {
-      const numerosWA = obra.whatsapp.split('/');
+      const numerosWA = obra.whatsapp.split(/[/,\s]+/);
       numerosWA.forEach(num => {
         let limpio = num.trim();
         let numSoloDigitos = limpio.replace(/[^0-9]/g, '');
-        let numParaLink = numSoloDigitos.startsWith('0') ? numSoloDigitos.slice(1) : numSoloDigitos;
         if (numSoloDigitos) {
-          redesHTML += `<a href="https://wa.me/58${numParaLink}" target="_blank" style="color:#25D366; text-decoration:none; font-weight:bold;">📲 WhatsApp: ${limpio}</a>`;
+          let numParaLink = numSoloDigitos.startsWith('0') ? numSoloDigitos.slice(1) : numSoloDigitos;
+          if (!numParaLink.startsWith('58') && numParaLink.length === 10) {
+            numParaLink = '58' + numParaLink;
+          }
+          redesHTML += `<a href="https://wa.me/${numParaLink}" target="_blank" style="color:#25D366; text-decoration:none; font-weight:bold; display:block;">📲 WhatsApp: ${limpio}</a>`;
           tieneRedes = true;
         }
       });
     }
     if (obra.instagram) {
-      redesHTML += `<a href="https://instagram.com/${obra.instagram}" target="_blank" style="color:#E1306C; text-decoration:none; font-weight:bold;">📸 Instagram: @${obra.instagram}</a>`;
+      redesHTML += `<a href="https://instagram.com/${obra.instagram}" target="_blank" style="color:#E1306C; text-decoration:none; font-weight:bold; display:block;">📸 Instagram: @${obra.instagram}</a>`;
       tieneRedes = true;
     }
     if (obra.facebook) {
-      redesHTML += `<a href="https://facebook.com/${obra.facebook}" target="_blank" style="color:#4267B2; text-decoration:none; font-weight:bold;">📘 Facebook: ${obra.facebook}</a>`;
+      redesHTML += `<a href="https://facebook.com/${obra.facebook}" target="_blank" style="color:#4267B2; text-decoration:none; font-weight:bold; display:block;">📘 Facebook: ${obra.facebook}</a>`;
       tieneRedes = true;
     }
     if (obra.tiktok) {
-      redesHTML += `<a href="https://tiktok.com/@${obra.tiktok}" target="_blank" style="color:#000; text-decoration:none; font-weight:bold;">🎵 TikTok: @${obra.tiktok}</a>`;
+      redesHTML += `<a href="https://tiktok.com/@${obra.tiktok}" target="_blank" style="color:#000; text-decoration:none; font-weight:bold; display:block;">🎵 TikTok: @${obra.tiktok}</a>`;
       tieneRedes = true;
     }
     redesHTML += '</div>';
@@ -756,6 +759,24 @@
     const inputBuscador = document.getElementById('inputBuscador');
     if (inputBuscador) {
       inputBuscador.addEventListener('input', cargarGaleria);
+    }
+
+    const modalProducto = document.getElementById('miModal');
+    if (modalProducto) {
+      modalProducto.addEventListener('click', (e) => {
+        if (e.target === modalProducto) {
+          cerrarModal();
+        }
+      });
+    }
+
+    const modalCarritoEl = document.getElementById('modalCarrito');
+    if (modalCarritoEl) {
+      modalCarritoEl.addEventListener('click', (e) => {
+        if (e.target === modalCarritoEl) {
+          cerrarCarrito();
+        }
+      });
     }
   });
   cargarGaleria();
