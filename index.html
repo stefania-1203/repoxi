@@ -65,9 +65,9 @@
                         <textarea id="descripcion" rows="3" placeholder="Detalles de la pieza, dimensiones, acabados..."></textarea>
                     </div>
                     <div class="form-grupo" style="margin-bottom:10px;">
-  <label for="whatsapp">WhatsApp (ej: 04141234567 / 04129876543):</label>
-  <input type="text" id="whatsapp" placeholder="Ej: 04141234567 / 04129876543">
-</div>
+                        <label for="whatsapp">WhatsApp (ej: 04141234567 / 04129876543):</label>
+                        <input type="text" id="whatsapp" placeholder="Ej: 04141234567 / 04129876543">
+                    </div>
                     <div class="form-grupo" style="margin-bottom:10px;">
                         <label for="instagram">Instagram (sin @):</label>
                         <input type="text" id="instagram" placeholder="Ej: mi_negocio">
@@ -112,7 +112,7 @@
             <h4>📋 Datos para Finalizar la Compra</h4>
             <div style="display: flex; flex-direction: column; gap: 8px;">
                 <input type="text" id="clienteNombre" placeholder="Tu Nombre y Apellido" required style="padding: 8px;">
-                <input type="text" id="clienteTelefono" placeholder="Tu WhatsApp (Ej: 584121234567)" required style="padding: 8px;">
+                <input type="text" id="clienteTelefono" placeholder="Tu WhatsApp (Ej: 04141234567)" required style="padding: 8px;">
                 <textarea id="clienteDireccion" placeholder="Dirección de envío o detalles de entrega" style="padding: 8px;"></textarea>
             </div>
 
@@ -218,7 +218,7 @@
     } else {
       usuarioLogueado = null;
       display.innerText = "Sin iniciar sesión";
-      btnAuth.innerText = "Iniciar Sesión con Google";
+      btnAuth.innerText = "Iniciar Sesión";
       btnAuth.className = "btn-verde";
       btnPublicar.style.display = 'none';
       cerrarFormulario();
@@ -234,7 +234,7 @@
       try {
         await signInWithPopup(auth, provider);
       } catch (error) {
-        mostrarNotificacion("Error al iniciar sesión con Google.");
+        mostrarNotificacion("Error al iniciar sesión");
       }
     }
   };
@@ -263,8 +263,7 @@
 
     if (textoBusqueda !== '') {
       productosOrdenados = productosOrdenados.filter(obra => 
-        (obra.titulo && obra.titulo.toLowerCase().includes(textoBusqueda)) ||
-        (obra.descripcion && obra.descripcion.toLowerCase().includes(textoBusqueda))
+        obra.titulo && obra.titulo.toLowerCase().includes(textoBusqueda)
       );
     }
 
@@ -488,7 +487,7 @@
           precio: document.getElementById('precio').value,
           descripcion: document.getElementById('descripcion').value,
           variantes: variantes,
-          whatsapp: document.getElementById('whatsapp')?.value.replace(/[^0-9]/g, '') || '',
+          whatsapp: document.getElementById('whatsapp')?.value.trim() || '',
           instagram: document.getElementById('instagram')?.value.replace('@', '').trim() || '',
           facebook: document.getElementById('facebook')?.value.trim() || '',
           tiktok: document.getElementById('tiktok')?.value.replace('@', '').trim() || '',
@@ -555,7 +554,7 @@
         </div>
 
         <div>
-          <label style="font-weight:bold; font-size:13px;">WhatsApp (solo números):</label>
+          <label style="font-weight:bold; font-size:13px;">WhatsApp (ej: 04141234567 / 04129876543):</label>
           <input type="text" id="editWhatsapp" value="${obra.whatsapp || ''}" style="width:100%; padding:6px;">
         </div>
 
@@ -610,7 +609,7 @@
     const nuevoTitulo = document.getElementById('editTitulo').value;
     const nuevoPrecio = document.getElementById('editPrecio').value;
     const nuevaDesc = document.getElementById('editDescripcion').value;
-    const nuevoWhatsapp = document.getElementById('editWhatsapp').value.replace(/[^0-9]/g, '');
+    const nuevoWhatsapp = document.getElementById('editWhatsapp').value.trim();
     const nuevoInstagram = document.getElementById('editInstagram').value.replace('@', '').trim();
     const nuevoFacebook = document.getElementById('editFacebook').value.trim();
     const nuevoTiktok = document.getElementById('editTiktok').value.replace('@', '').trim();
@@ -704,8 +703,16 @@
     let tieneRedes = false;
 
     if (obra.whatsapp) {
-      redesHTML += `<a href="https://wa.me/${obra.whatsapp}" target="_blank" style="color:#25D366; text-decoration:none; font-weight:bold;">📲 WhatsApp: +${obra.whatsapp}</a>`;
-      tieneRedes = true;
+      const numerosWA = obra.whatsapp.split('/');
+      numerosWA.forEach(num => {
+        let limpio = num.trim();
+        let numSoloDigitos = limpio.replace(/[^0-9]/g, '');
+        let numParaLink = numSoloDigitos.startsWith('0') ? numSoloDigitos.slice(1) : numSoloDigitos;
+        if (numSoloDigitos) {
+          redesHTML += `<a href="https://wa.me/58${numParaLink}" target="_blank" style="color:#25D366; text-decoration:none; font-weight:bold;">📲 WhatsApp: ${limpio}</a>`;
+          tieneRedes = true;
+        }
+      });
     }
     if (obra.instagram) {
       redesHTML += `<a href="https://instagram.com/${obra.instagram}" target="_blank" style="color:#E1306C; text-decoration:none; font-weight:bold;">📸 Instagram: @${obra.instagram}</a>`;
@@ -751,7 +758,7 @@
       inputBuscador.addEventListener('input', cargarGaleria);
     }
   });
-cargarGaleria()
+  cargarGaleria();
 </script>
 </body>
 </html>
